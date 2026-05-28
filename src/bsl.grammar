@@ -112,20 +112,15 @@ body { (BodyStatement | Preprocessor)* }
 
 // ---- Statements ----
 
-// Flat (non-block) statements MUST end with `;`. This is the BSL convention
-// in practice and it gives the parser an unambiguous anchor for optional
-// trailing expressions (e.g. `Return foo` vs `Return; foo` — both grammatical
-// without a required separator). Block statements (If/While/For/Try) end at
-// their dedicated end-keyword, so no trailing `;` is required there.
-//
-// Known v1 limitation: trailing semicolons are required after `Возврат`,
-// `Продолжить`, `Прервать`, `Вызватьисключение`, `Выполнить`, `Перейти`,
-// `ДобавитьОбработчик`, `УдалитьОбработчик`, assignment, and call statements.
-// ANTLR's grammar accepts them as optional, but that introduces LR ambiguity
-// with valid statement starters like `Identifier`/`Ждать`. See v2 TODO.
+// Flat (non-block) statements end with `;` (BSL convention). Block statements
+// (If/While/For/Try) end at their dedicated end-keyword and may optionally be
+// followed by `;`. The `~blockSemi` ambiguity marker lets Lezer's GLR engine
+// resolve the shift/reduce choice between "consume the `;` as part of this
+// statement" vs "leave it for a bare-`;` next statement" at parse time.
 BodyStatement {
   Label? flatStatement ";" |
-  Label? blockStatement |
+  Label? blockStatement ~blockSemi ";" |
+  Label? blockStatement ~blockSemi |
   ";"
 }
 
@@ -139,7 +134,8 @@ flatStatement {
   ExecuteStatement |
   GotoStatement |
   AddHandlerStatement |
-  RemoveHandlerStatement
+  RemoveHandlerStatement |
+  AwaitStatement
 }
 
 blockStatement {
@@ -178,16 +174,19 @@ ForEachStatement {
 
 TryStatement { Try body Except body EndTry }
 
-// Statements with optional trailing expression — the BodyStatement-level
-// mandatory `;` provides unambiguous lookahead for the optional.
-ReturnStatement { Return expression? }
+// Statements with optional trailing expression. `@dynamicPrecedence=1` biases
+// Lezer's GLR engine toward the parse that *includes* the optional expression
+// (this lets `Возврат Ждать F()` parse as `ReturnStatement(Return, AwaitExpr)`
+// rather than two consecutive statements).
+ReturnStatement[@dynamicPrecedence=1] { Return expression? }
 ContinueStatement { Continue }
 BreakStatement { Break }
-RaiseStatement { Raise expression? }
+RaiseStatement[@dynamicPrecedence=1] { Raise expression? }
 ExecuteStatement { Execute expression }
 GotoStatement { Goto "~" Identifier }
 AddHandlerStatement { AddHandler expression "," expression }
 RemoveHandlerStatement { RemoveHandler expression "," expression }
+AwaitStatement { Await expression }
 
 // ---- Expressions ----
 //
@@ -280,13 +279,19 @@ Region { "#" PreprocRegion RegionName }
 EndRegion { "#" PreprocEndRegion }
 RegionName { Identifier }
 
-PreprocessorIf { "#" PreprocIf preprocExpr PreprocThen }
-PreprocessorElsif { "#" PreprocElsif preprocExpr PreprocThen }
-PreprocessorElse { "#" PreprocElse }
-PreprocessorEndIf { "#" PreprocEndIf }
+// Preprocessor `#Если/#ИначеЕсли/#Иначе/#КонецЕсли/#Тогда` and their logical
+// operators `И/ИЛИ/НЕ` share token surface with the corresponding BSL
+// keywords. Rather than running a context-sensitive specializer (which Lezer
+// cannot do natively against the existing identifier specialize hook), we
+// reuse the BSL terms here and let styleTags discriminate via parent
+// selectors like `"PreprocessorIf/If": t.macroName`.
+PreprocessorIf { "#" If preprocExpr Then }
+PreprocessorElsif { "#" Elsif preprocExpr Then }
+PreprocessorElse { "#" Else }
+PreprocessorEndIf { "#" EndIf }
 
 preprocExpr {
-  PreprocNot preprocExpr |
+  Not preprocExpr |
   "(" preprocExpr ")" |
   preprocExpr !preprocBool preprocBoolOp preprocExpr |
   PreprocSymbol
@@ -294,7 +299,7 @@ preprocExpr {
 
 PreprocSymbol { Identifier }
 
-preprocBoolOp { PreprocOr | PreprocAnd }
+preprocBoolOp { Or | And }
 
 // ---- Precedence ----
 
@@ -311,12 +316,17 @@ preprocBoolOp { PreprocOr | PreprocAnd }
 
 // ---- Skipping ----
 
-@skip { space | LineComment }
+@skip { space | LineComment | DocComment }
 
 // ---- Tokens ----
 
 @tokens {
   space { @whitespace+ }
+
+  // BSLDescription doc-comments — `///` line-prefix marks a documentation
+  // comment that bsl-language-server highlights with SemanticTokenModifiers
+  // .Documentation. Tagged as docComment via styleTags.
+  DocComment { "///" ![\n]* }
 
   LineComment { "//" ![\n]* }
 
@@ -352,7 +362,7 @@ preprocBoolOp { PreprocOr | PreprocAnd }
 
   @precedence { "<=", "<>", "<" }
   @precedence { ">=", ">" }
-  @precedence { LineComment, "/" }
+  @precedence { DocComment, LineComment, "/" }
   @precedence { Number, "." }
   @precedence { ShebangLine, "#" }
 }
@@ -372,15 +382,13 @@ preprocBoolOp { PreprocOr | PreprocAnd }
   And, Or, Not,
   True, False, Undefined, Null,
 
-  // Preprocessor directive names — same identifier surface, different meaning
-  // when following `#`. Surfaced as distinct terms so styleTags can colour them.
-  // NOTE: global specialization — `Использовать`, `Область`, `Native`, etc.
-  // used as ordinary identifiers will be tagged as preprocessor tokens. BSL
-  // convention does not collide with these names in practice; context-sensitive
-  // resolution is on the v2 TODO list.
-  PreprocIf, PreprocElsif, PreprocElse, PreprocEndIf, PreprocThen,
-  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative,
-  PreprocNot, PreprocOr, PreprocAnd
+  // Preprocessor-only keywords whose surface form does NOT collide with any
+  // BSL keyword — these can be specialized globally without breaking ordinary
+  // identifier resolution.  `If/Else/Elsif/EndIf/Then/Not/And/Or` are deliberately
+  // omitted here because they're shared with BSL control flow and routed
+  // through the same terms; styleTags discriminates via parent selectors
+  // (`PreprocessorIf/If` etc.).
+  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative
 }
 
 @detectDelim

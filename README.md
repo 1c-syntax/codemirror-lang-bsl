@@ -37,20 +37,29 @@ new EditorView({
 ## What's covered
 
 - Module-level: variable declarations (`Перем`/`Var`), procedure/function
-  declarations with `Экспорт`, default parameters and `Знач`/`Val`
+  declarations with `Экспорт`, default parameters and `Знач`/`Val`, async
+  modifier `АСИНХ`
 - Control flow: `Если`/`ИначеЕсли`/`Иначе`/`КонецЕсли`,
   `Пока`/`КонецЦикла`, `Для … По … Цикл`/`КонецЦикла`,
   `Для Каждого … Из`/`КонецЦикла`, `Попытка`/`Исключение`/`КонецПопытки`
-- Statements: `Возврат`/`Продолжить`/`Прервать`/`Перейти`, labels `~Метка:`
-- Expressions: number literals, string literals (incl. multi-line with `|`),
-  date literals `'YYYYMMDDHHMMSS'`, booleans `Истина`/`Ложь`,
-  `Неопределено`, `Null`, `Новый`, ternary `?(…)`
+- Statements: `Возврат`/`Продолжить`/`Прервать`/`Перейти`, labels `~Метка:`,
+  `Ждать` as both standalone statement and expression, `ВызватьИсключение`,
+  `Выполнить`, `ДобавитьОбработчик`/`УдалитьОбработчик`
+- Expressions: number literals, string literals (single-line and multi-line
+  with `|` continuation), date literals `'YYYYMMDDHHMMSS'`,
+  booleans `Истина`/`Ложь`, `Неопределено`, `Null`, `Новый`, ternary `?(…)`
 - Operators: arithmetic, comparison, logical (`И`/`Или`/`Не`)
 - Annotations: `&НаКлиенте`, `&НаСервере`, `&НаКлиентеНаСервереБезКонтекста`, …
+  including annotation parameters
 - Preprocessor: `#Если`/`#ИначеЕсли`/`#Иначе`/`#КонецЕсли`,
-  `#Область`/`#КонецОбласти`, `#Использовать`
-- Comments: `//` (single-line)
-- SDBL embedded highlighting inside string literals (best-effort detection)
+  `#Область`/`#КонецОбласти`, `#Использовать`, `#native`
+- Comments: `//` (single-line), `///` (BSLDescription doc-comments)
+- **SDBL** (BSL query language) **embedded inside query string literals** —
+  a separate Lezer grammar covering 100+ keywords (statement / operator /
+  function / type / metadata-object / virtual-table categories) is mounted
+  as an overlay onto any string literal that starts with `ВЫБРАТЬ`/`SELECT`/
+  `УНИЧТОЖИТЬ`/`DROP`. Russian and English keyword variants are both
+  recognised and styled identically.
 
 ## Upstream references
 
@@ -68,30 +77,30 @@ To re-sync after an upstream change: bump the relevant pinned commit in the
 table above, replay the upstream diff against `src/bsl.grammar` and
 `src/index.ts` (styleTags), and add regression tests in `test/cases.txt`.
 
-## Roadmap
+## Limitations
 
-v0.1 (this release) covers the BSL surface used by the SemanticTokensProvider
-in bsl-language-server. The following are explicit non-goals of v0.1 and live
-on the v0.2 backlog:
+A handful of intentional simplifications, mostly to keep the LR grammar
+free of ambiguity:
 
-- **SDBL embedded grammar inside string-query literals.** Today query strings
-  are highlighted as plain strings. Will require a separate Lezer parser for
-  `1c-syntax/bsl-parser → SDBL{Lexer,Parser}.g4` + `parseMixed` from
-  `@lezer/common` to switch parsers inside contexts like `Запрос.Текст = "…"`.
-- **BSLDescription doc-comments** (`/// @param …`, `/// @returns …`).
-- **Context-sensitive preprocessor identifiers.** Today `Использовать` /
-  `Область` / `Native` etc. are global keywords and would be tagged as
-  preprocessor tokens even if used as ordinary identifiers (rare in real code,
-  but possible).
-- **Trailing semicolons** after flat statements (`Возврат`, `Прервать`, …) are
-  required. ANTLR allows them to be optional; v0.1 forces them to avoid
-  LR ambiguity with optional trailing expressions.
-- **Async/Await statements** (`Ждать F();` as a bare statement). `Ждать`
-  inside expression position is supported.
+- **Trailing semicolons** after *flat* statements (`Возврат`, `Прервать`,
+  assignment, call) are required. ANTLR allows them to be optional; we force
+  them because the optional form clashes with valid statement starters like
+  `Ждать` or identifiers as the next statement. Block statements (`Если`,
+  `Пока`, `Для`, `Попытка`) still accept an optional trailing `;`.
+- **Context-sensitive preprocessor identifiers.** `#Если`/`#Иначе`/
+  `#КонецЕсли`/`#Тогда`/`#И`/`#Или`/`#Не` reuse the corresponding BSL keyword
+  terms — styleTags discriminates them via parent selectors. The remaining
+  preprocessor-only words (`Область`, `КонецОбласти`, `Использовать`,
+  `native`) are specialized globally; if you use one as an ordinary
+  identifier outside `#` context, it will be tagged as a preprocessor
+  token. BSL convention does not collide with these names in practice.
+- **Comma-skipping in call arguments** (`Метод(a,,b)`) is not supported. All
+  arguments must be non-empty expressions.
 
 Out of scope (defer to other tools):
 
-- IntelliSense / completion / hover — that belongs in `bsl-language-server`.
+- IntelliSense / completion / hover — that belongs in
+  [`bsl-language-server`](https://github.com/1c-syntax/bsl-language-server).
 - Refactorings, diagnostics — same.
 
 ## Build & test

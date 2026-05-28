@@ -1,0 +1,111 @@
+// Lezer grammar for the BSL Query Language (SDBL / Язык запросов 1С).
+//
+// SDBL is consumed only as embedded content inside BSL string literals
+// (highlighted via parseMixed). The grammar's job is therefore *tokenization
+// + classification* rather than full structural parsing: each token routes
+// to the right @lezer/highlight tag, but no statement structure is enforced
+// (this keeps the grammar tolerant of fragments inside arbitrary string
+// content — including dynamic concatenations, partial queries built up over
+// several assignments, etc.).
+//
+// Token vocabulary mirrors https://github.com/1c-syntax/bsl-parser
+// (`SDBLLexer.g4`). Case-insensitive matching uses the same @external
+// specialize machinery as the BSL grammar — Russian and English forms share
+// each entry.
+
+@top Query {
+  fragment*
+}
+
+fragment {
+  StmtKw |
+  OpKw |
+  FuncKw |
+  TypeKw |
+  MdoKw |
+  VtKw |
+  FieldKw |
+  BoolLit |
+  NullLit |
+  UndefinedLit |
+  Parameter |
+  Identifier |
+  Number |
+  StringLit |
+  ParenGroup |
+  AddOp |
+  MulOp |
+  CmpOp |
+  Punct
+}
+
+ParenGroup { "(" fragment* ")" }
+
+Parameter { "&" Identifier }
+
+AddOp { "+" | "-" }
+MulOp { "*" | "/" }
+CmpOp { "=" | "<>" | "<" | "<=" | ">" | ">=" }
+Punct { "," | ";" | ":" | "." | "#" }
+
+// ---- Skipping ----
+
+@skip { space | LineComment }
+
+// ---- Tokens ----
+
+@tokens {
+  space { @whitespace+ }
+
+  LineComment { "//" ![\n]* }
+
+  // Identifier — Latin + Cyrillic + underscore + alphanumeric.
+  identifierChar { $[a-zA-Z_Ѐ-ӿԀ-ԯ] }
+  identifierContinue { $[a-zA-Z0-9_Ѐ-ӿԀ-ԯ] }
+  Identifier { identifierChar identifierContinue* }
+
+  Number { $[0-9]+ ("." $[0-9]*)? }
+
+  // Inside a SDBL fragment we still see BSL-style strings — used for literal
+  // string values inside the query (e.g. WHERE field = "value").
+  StringLit {
+    '"' (![\n\r"] | '""')*
+    ($[\n\r] $[ \t]* "|" (![\n\r"] | '""')*)*
+    '"'
+  }
+
+  // Punctuation
+  "(" ")" "," ":" ";" "." "#" "&"
+  "+" "-" "*" "/"
+  "=" "<>" "<=" ">=" "<" ">"
+
+  @precedence { "<=", "<>", "<" }
+  @precedence { ">=", ">" }
+  @precedence { LineComment, "/" }
+  @precedence { Number, "." }
+}
+
+// ---- External specialization: case-insensitive keyword matching ----
+//
+// SDBL keywords are dispatched through `sdblKeyword` in ./sdbl-tokens.ts,
+// which lowercases the identifier text and looks it up in a static table
+// covering both Russian and English spellings.
+//
+// Keywords are grouped into category-specific terms so styleTags can colour
+// each group distinctly (statements vs operators vs aggregate functions vs
+// type names vs metadata-object types vs virtual-table names).
+
+@external specialize {Identifier} sdblKeyword from "./sdbl-tokens" {
+  StmtKw,
+  OpKw,
+  FuncKw,
+  TypeKw,
+  MdoKw,
+  VtKw,
+  FieldKw,
+  BoolLit,
+  NullLit,
+  UndefinedLit
+}
+
+@detectDelim

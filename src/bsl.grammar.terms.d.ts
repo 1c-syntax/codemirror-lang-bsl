@@ -46,15 +46,7 @@ export const False: number
 export const Undefined: number
 export const Null: number
 
-export const PreprocIf: number
-export const PreprocElsif: number
-export const PreprocElse: number
-export const PreprocEndIf: number
-export const PreprocThen: number
 export const PreprocRegion: number
 export const PreprocEndRegion: number
 export const PreprocUse: number
 export const PreprocNative: number
-export const PreprocNot: number
-export const PreprocOr: number
-export const PreprocAnd: number

@@ -1,0 +1,240 @@
+# Async function with Await statement
+
+АСИНХ Функция ВычислитьАсинхронно()
+  Результат = Ждать Сервер.Вычислить();
+  Возврат Результат;
+КонецФункции
+
+==>
+
+Module(
+  FunctionDecl(
+    Async,
+    Function,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(
+      Assignment(
+        Identifier, "=",
+        AwaitExpr(Await, Identifier, CallAccess(".", Identifier, "(", ")"))
+      ),
+      ";"
+    ),
+    BodyStatement(ReturnStatement(Return, Identifier), ";"),
+    EndFunction
+  )
+)
+
+# Date literal
+
+Процедура Т()
+  Дата = '20240115';
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(Assignment(Identifier, "=", Date), ";"),
+    EndProcedure
+  )
+)
+
+# Goto and label
+
+Процедура Т()
+  ~Начало:
+  Если а = 1 Тогда
+    Перейти ~Начало;
+  КонецЕсли;
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(
+      Label("~", LabelName(Identifier), ":"),
+      IfStatement(
+        If,
+        BinaryExpr(Identifier, CmpOp, Number),
+        Then,
+        BodyStatement(GotoStatement(Goto, "~", Identifier), ";"),
+        EndIf
+      )
+    ),
+    BodyStatement(";"),
+    EndProcedure
+  )
+)
+
+# Ternary operator and New expression
+
+Процедура Т()
+  з = ?(а > 0, "плюс", "минус");
+  Объект = Новый Структура("Имя, Возраст", "Иван", 30);
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(
+      Assignment(
+        Identifier, "=",
+        TernaryOp("?", "(",
+          BinaryExpr(Identifier, CmpOp, Number), ",",
+          String, ",",
+          String,
+          ")"
+        )
+      ),
+      ";"
+    ),
+    BodyStatement(
+      Assignment(
+        Identifier, "=",
+        NewExpr(New, Identifier, "(", String, ",", String, ",", Number, ")")
+      ),
+      ";"
+    ),
+    EndProcedure
+  )
+)
+
+# AddHandler / RemoveHandler
+
+Процедура Т()
+  ДобавитьОбработчик Событие.OnClick, ОбработчикКлика;
+  УдалитьОбработчик Событие.OnClick, ОбработчикКлика;
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(
+      AddHandlerStatement(
+        AddHandler,
+        Identifier, PropertyAccess(".", Identifier),
+        ",",
+        Identifier
+      ),
+      ";"
+    ),
+    BodyStatement(
+      RemoveHandlerStatement(
+        RemoveHandler,
+        Identifier, PropertyAccess(".", Identifier),
+        ",",
+        Identifier
+      ),
+      ";"
+    ),
+    EndProcedure
+  )
+)
+
+# Preprocessor #Если block with Russian keywords (shared with BSL If/Else)
+
+#Если Клиент Тогда
+Процедура НаКлиенте()
+КонецПроцедуры
+#Иначе
+Процедура НаСервере()
+КонецПроцедуры
+#КонецЕсли
+
+==>
+
+Module(
+  Preprocessor(PreprocessorIf("#", If, PreprocSymbol(Identifier), Then)),
+  ProcedureDecl(Procedure, SubName(Identifier), "(", ")", EndProcedure),
+  Preprocessor(PreprocessorElse("#", Else)),
+  ProcedureDecl(Procedure, SubName(Identifier), "(", ")", EndProcedure),
+  Preprocessor(PreprocessorEndIf("#", EndIf))
+)
+
+# DocComment lines as flat tree children
+
+/// Тестовая процедура
+/// @param Параметр - Строка - значение
+Процедура Тест(Параметр)
+КонецПроцедуры
+
+==>
+
+Module(
+  DocComment,
+  DocComment,
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    Param(Identifier),
+    ")",
+    EndProcedure
+  )
+)
+
+# Multi-line string with continuation bar
+
+Процедура Т()
+  с = "первая строка
+       |вторая строка
+       |третья";
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(Assignment(Identifier, "=", String), ";"),
+    EndProcedure
+  )
+)
+
+# SDBL embedded inside a query string
+
+Процедура Т()
+  Запрос = Новый Запрос;
+  Запрос.Текст = "ВЫБРАТЬ Контрагенты.Наименование ИЗ Справочник.Контрагенты КАК Контрагенты ГДЕ Контрагенты.Поставщик = ИСТИНА";
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    BodyStatement(
+      Assignment(Identifier, "=", NewExpr(New, Identifier)),
+      ";"
+    ),
+    BodyStatement(
+      Assignment(
+        Identifier, PropertyAccess(".", Identifier),
+        "=",
+        String
+      ),
+      ";"
+    ),
+    EndProcedure
+  )
+)

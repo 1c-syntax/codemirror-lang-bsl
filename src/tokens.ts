@@ -18,9 +18,7 @@ import {
   Async, Await,
   And, Or, Not,
   True, False, Undefined, Null,
-  PreprocIf, PreprocElsif, PreprocElse, PreprocEndIf, PreprocThen,
-  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative,
-  PreprocNot, PreprocOr, PreprocAnd
+  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative
 } from "./bsl.grammar.terms"
 
 // Map of lowercased keyword text → Lezer term ID. Both Russian and English
@@ -76,23 +74,17 @@ const KEYWORDS: Record<string, number> = {
   "null": Null
 }
 
-// Preprocessor directive vocabulary — matched only when the parser context
-// expects a directive (right after a `#` token). Sharing the lookup table
-// with normal keywords is fine because the parser productions select which
-// kind of token may appear where.
+// Preprocessor-only directive vocabulary — only words that don't shadow a BSL
+// keyword. The other preproc surface forms (`Если`, `Иначе`, `КонецЕсли`,
+// `Тогда`, `И`, `Или`, `Не`) are intentionally absent here because they share
+// a term with the BSL control-flow keyword; the parser handles them via
+// preprocessor productions, and styleTags routes them via parent selectors
+// like `"PreprocessorIf/If"`.
 const PREPROC_KEYWORDS: Record<string, number> = {
-  "если": PreprocIf, "if": PreprocIf,
-  "иначеесли": PreprocElsif, "elsif": PreprocElsif,
-  "иначе": PreprocElse, "else": PreprocElse,
-  "конецесли": PreprocEndIf, "endif": PreprocEndIf,
-  "тогда": PreprocThen, "then": PreprocThen,
   "область": PreprocRegion, "region": PreprocRegion,
   "конецобласти": PreprocEndRegion, "endregion": PreprocEndRegion,
   "использовать": PreprocUse, "use": PreprocUse,
-  "native": PreprocNative,
-  "не": PreprocNot, "not": PreprocNot,
-  "или": PreprocOr, "or": PreprocOr,
-  "и": PreprocAnd, "and": PreprocAnd
+  "native": PreprocNative
 }
 
 // Specializer invoked by Lezer for every Identifier token. Returns a term ID
@@ -100,7 +92,6 @@ const PREPROC_KEYWORDS: Record<string, number> = {
 // Identifier. Lookups are O(1).
 export function keyword(name: string): number {
   const lower = name.toLowerCase()
-  // Try general keyword first; if not found, try preprocessor-only set.
   if (lower in KEYWORDS) return KEYWORDS[lower]
   if (lower in PREPROC_KEYWORDS) return PREPROC_KEYWORDS[lower]
   return -1
