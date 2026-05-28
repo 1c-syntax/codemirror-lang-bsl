@@ -1,0 +1,71 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run (npm publish --dry-run, doesn't actually publish)"
+        type: boolean
+        default: false
+
+# Required by `npm publish --provenance`: the workflow exchanges its OIDC
+# token for a sigstore signing identity that npmjs.org records alongside the
+# tarball. Consumers can then verify the artifact came from this specific
+# repo + workflow run via `npm view codemirror-lang-bsl provenance`.
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/codemirror-lang-bsl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: "https://registry.npmjs.org/"
+          # Forces auth for the public registry even though our committed
+          # .npmrc only sets `registry`. Without this, `npm publish` would
+          # use the anonymous fetch path and reject the upload.
+          always-auth: true
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm test
+
+      - name: Verify package version matches the release tag
+        if: github.event_name == 'release'
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          pkg=$(node -p "require('./package.json').version")
+          echo "release tag: $tag, package version: v$pkg"
+          if [ "$tag" != "v$pkg" ]; then
+            echo "::error::Tag ($tag) does not match package.json version (v$pkg)" >&2
+            exit 1
+          fi
+
+      - name: Publish (dry-run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: npm publish --dry-run --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
