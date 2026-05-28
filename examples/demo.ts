@@ -1,4 +1,4 @@
-// Live demo: two-panel CodeMirror 6 + codemirror-lang-bsl showcase.
+// Live demo: two-panel CodeMirror 6 + @1c-syntax/codemirror-lang-bsl showcase.
 //
 // Bundled to docs/bundle.js by `npm run build:demo` and deployed to GitHub
 // Pages by the .github/workflows/pages.yml workflow.

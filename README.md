@@ -1,6 +1,6 @@
-# codemirror-lang-bsl
+# @1c-syntax/codemirror-lang-bsl
 
-[![npm](https://img.shields.io/npm/v/codemirror-lang-bsl.svg)](https://www.npmjs.com/package/codemirror-lang-bsl)
+[![npm](https://img.shields.io/npm/v/@1c-syntax/codemirror-lang-bsl.svg)](https://www.npmjs.com/package/@1c-syntax/codemirror-lang-bsl)
 [![CI](https://github.com/1c-syntax/codemirror-lang-bsl/actions/workflows/ci.yml/badge.svg)](https://github.com/1c-syntax/codemirror-lang-bsl/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -26,14 +26,14 @@ TextMate grammar for token style mapping.
 ## Install
 
 ```bash
-npm install codemirror-lang-bsl
+npm install @1c-syntax/codemirror-lang-bsl
 ```
 
 ## Usage
 
 ```ts
 import {EditorView, basicSetup} from "codemirror"
-import {bsl} from "codemirror-lang-bsl"
+import {bsl} from "@1c-syntax/codemirror-lang-bsl"
 
 new EditorView({
   doc: 'Процедура Привет() Экспорт\n    Сообщить("Привет, мир!");\nКонецПроцедуры',
@@ -171,11 +171,11 @@ the tarball contents and packaged size before cutting a real release.
 
 ### After the first release (Trusted Publishing)
 
-Once `codemirror-lang-bsl` exists on npmjs.org, switch to
+Once `@1c-syntax/codemirror-lang-bsl` exists on npmjs.org, switch to
 [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) to drop the
 NPM_TOKEN secret:
 
-1. <https://www.npmjs.com/package/codemirror-lang-bsl/access> →
+1. <https://www.npmjs.com/package/@1c-syntax/codemirror-lang-bsl/access> →
    *Trusted Publishers* → *Add*
 2. Provider: GitHub Actions; Repository: `1c-syntax/codemirror-lang-bsl`;
    Workflow file: `.github/workflows/publish.yml`; Environment: `npm`.

@@ -1,5 +1,5 @@
 {
-  "name": "codemirror-lang-bsl",
+  "name": "@1c-syntax/codemirror-lang-bsl",
   "version": "0.2.0",
   "description": "1C:Enterprise / OneScript (BSL) language support for CodeMirror 6",
   "keywords": [

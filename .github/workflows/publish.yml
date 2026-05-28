@@ -13,7 +13,7 @@ on:
 # Required by `npm publish --provenance`: the workflow exchanges its OIDC
 # token for a sigstore signing identity that npmjs.org records alongside the
 # tarball. Consumers can then verify the artifact came from this specific
-# repo + workflow run via `npm view codemirror-lang-bsl provenance`.
+# repo + workflow run via `npm view @1c-syntax/codemirror-lang-bsl provenance`.
 permissions:
   contents: read
   id-token: write
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: npm
-      url: https://www.npmjs.com/package/codemirror-lang-bsl
+      url: https://www.npmjs.com/package/@1c-syntax/codemirror-lang-bsl
     steps:
       - uses: actions/checkout@v4
 

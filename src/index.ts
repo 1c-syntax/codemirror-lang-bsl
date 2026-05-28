@@ -216,7 +216,7 @@ export const bslLanguage = LRLanguage.define({
  * @example
  * ```ts
  * import {EditorView, basicSetup} from "codemirror"
- * import {bsl} from "codemirror-lang-bsl"
+ * import {bsl} from "@1c-syntax/codemirror-lang-bsl"
  *
  * new EditorView({
  *   doc: 'Запрос.Текст = "ВЫБРАТЬ * ИЗ Справочник.Контрагенты";',
