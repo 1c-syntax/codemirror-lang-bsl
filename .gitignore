@@ -1,8 +1,8 @@
 /node_modules
-package-lock.json
 /dist
 /docs
 /src/*.js
-# Note: src/*.d.ts files are intentionally tracked — they are hand-written
-# type shims for the lezer-generated virtual modules (`./bsl.grammar`,
-# `./bsl.grammar.terms`) that tsc cannot otherwise resolve.
+# Note: package-lock.json IS tracked so GHA's `cache: npm` works and builds
+# are reproducible; src/*.d.ts files are intentionally tracked — they are
+# hand-written type shims for the lezer-generated virtual modules
+# (`./bsl.grammar`, `./bsl.grammar.terms`) that tsc cannot otherwise resolve.
