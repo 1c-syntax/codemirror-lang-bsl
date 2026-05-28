@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>codemirror-lang-bsl — live demo</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --fg: #1a1a1a;
+      --muted: #666;
+      --border: #ddd;
+      --accent: #1f6feb;
+    }
+    body.dark {
+      --bg: #1e1e1e;
+      --fg: #e6e6e6;
+      --muted: #999;
+      --border: #383838;
+      --accent: #58a6ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      padding: 16px;
+    }
+    header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    header p { margin: 4px 0 0 0; color: var(--muted); font-size: 12px; }
+    header .links { font-size: 12px; }
+    header .links a { color: var(--accent); margin-left: 12px; text-decoration: none; }
+    header .links a:hover { text-decoration: underline; }
+    button {
+      font: inherit;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--fg);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      height: calc(100vh - 100px);
+      min-height: 480px;
+    }
+    @media (max-width: 880px) {
+      .panels { grid-template-columns: 1fr; height: auto; }
+    }
+    .panel { display: flex; flex-direction: column; min-height: 0; }
+    .panel h2 { margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .panel .editor {
+      flex: 1; min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .cm-editor { height: 100%; }
+    .cm-editor.cm-focused { outline: none; }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>codemirror-lang-bsl — live demo</h1>
+    <p>Подсветка <strong>1C:Enterprise (BSL)</strong> и <strong>OneScript</strong> для CodeMirror 6 со встроенной грамматикой SDBL внутри строк-запросов.</p>
+  </div>
+  <div class="links">
+    <button id="theme-toggle" type="button">Тёмная тема</button>
+    <a href="https://github.com/1c-syntax/codemirror-lang-bsl">GitHub</a>
+    <a href="https://www.npmjs.com/package/codemirror-lang-bsl">npm</a>
+  </div>
+</header>
+
+<div class="panels">
+  <section class="panel">
+    <h2>Модуль 1С — процедура, цикл, аннотация, регион, асинхронная функция</h2>
+    <div class="editor" id="editor-module"></div>
+  </section>
+  <section class="panel">
+    <h2>Запрос — обратите внимание на подсветку SDBL внутри строки</h2>
+    <div class="editor" id="editor-query"></div>
+  </section>
+</div>
+
+<script type="module" src="./bundle.js"></script>
+</body>
+</html>

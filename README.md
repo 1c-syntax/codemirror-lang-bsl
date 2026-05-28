@@ -9,6 +9,14 @@
 preprocessor directives, compilation annotations, multi-line string literals,
 and embedded query language (SDBL) inside string literals.
 
+## 👉 Live demo
+
+**<https://1c-syntax.github.io/codemirror-lang-bsl/>** — two side-by-side
+CodeMirror 6 editors: one with a sample BSL module (procedure with annotation,
+control flow, async function, region), another with a function whose query
+string body is highlighted by the embedded SDBL grammar. Add `?theme=light` to
+the URL for the light theme.
+
 The grammar is implemented in [Lezer](https://lezer.codemirror.net/), references
 the [`1c-syntax/bsl-parser`](https://github.com/1c-syntax/bsl-parser) ANTLR4
 grammars for structure and the
@@ -118,10 +126,21 @@ against the public registry.
 
 ## Demo
 
-`examples/demo.html` wires CodeMirror 6 + `bsl()` against a small sample
-module. Open it through any ESM-aware dev server (esbuild, vite, etc.); a
-bare file:// open will not work because CodeMirror's module graph requires
-resolution.
+The hosted version at <https://1c-syntax.github.io/codemirror-lang-bsl/> is
+deployed automatically by `.github/workflows/pages.yml` on every push to
+`main`. To build the demo locally:
+
+```bash
+npm install
+npm run build       # main library, dist/
+npm run build:demo  # static demo, docs/
+# serve docs/ via any HTTP server, e.g.
+python3 -m http.server -d docs 8080
+```
+
+`examples/demo.ts` is the source; `examples/index.html` is the HTML shell that
+the rollup config copies into `docs/index.html` alongside the bundled
+`bundle.js`.
 
 ## License
 

@@ -1,6 +1,7 @@
 /node_modules
 package-lock.json
 /dist
+/docs
 /src/*.js
 # Note: src/*.d.ts files are intentionally tracked — they are hand-written
 # type shims for the lezer-generated virtual modules (`./bsl.grammar`,
