@@ -1,0 +1,232 @@
+# Empty module
+
+==>
+
+Module()
+
+# Module with line comment only
+
+// модуль без кода
+
+==>
+
+Module(LineComment)
+
+# Empty procedure (Russian keywords)
+
+Процедура Тест()
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    ")",
+    EndProcedure
+  )
+)
+
+# Empty function (English keywords)
+
+Function Hello() Export
+EndFunction
+
+==>
+
+Module(
+  FunctionDecl(
+    Function,
+    SubName(Identifier),
+    "(",
+    ")",
+    Export,
+    EndFunction
+  )
+)
+
+# Procedure with parameters and Val/default
+
+Процедура Привет(Знач Имя = "мир", Возраст)
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    Param(Val, Identifier, "=", DefaultValue(String)),
+    ",",
+    Param(Identifier),
+    ")",
+    EndProcedure
+  )
+)
+
+# Module-level variable declaration
+
+Перем Глобальная, ВтораяГлобальная Экспорт;
+
+==>
+
+Module(
+  VarStatement(
+    Var,
+    VarDeclaration(Identifier),
+    ",",
+    VarDeclaration(Identifier, Export),
+    ";"
+  )
+)
+
+# If/Elsif/Else
+
+Процедура Т()
+  Если а Тогда
+    б = 1;
+  ИначеЕсли в Тогда
+    г = 2;
+  Иначе
+    д = 3;
+  КонецЕсли;
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    ")",
+    BodyStatement(
+      IfStatement(
+        If,
+        Identifier,
+        Then,
+        BodyStatement(Assignment(Identifier, "=", Number), ";"),
+        ElsifBranch(
+          Elsif,
+          Identifier,
+          Then,
+          BodyStatement(Assignment(Identifier, "=", Number), ";")
+        ),
+        ElseBranch(
+          Else,
+          BodyStatement(Assignment(Identifier, "=", Number), ";")
+        ),
+        EndIf
+      )
+    ),
+    BodyStatement(";"),
+    EndProcedure
+  )
+)
+
+# String literal with escaped quotes
+
+Процедура Т()
+  с = "Привет, ""мир""!";
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    ")",
+    BodyStatement(Assignment(Identifier, "=", String), ";"),
+    EndProcedure
+  )
+)
+
+# Compiler-directive annotation
+
+&НаКлиенте
+Процедура Команда(Параметр)
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Annotation("&", AnnotationName(Identifier)),
+    Procedure,
+    SubName(Identifier),
+    "(",
+    Param(Identifier),
+    ")",
+    EndProcedure
+  )
+)
+
+# Preprocessor region
+
+#Область Сервис
+
+Процедура Тест()
+КонецПроцедуры
+
+#КонецОбласти
+
+==>
+
+Module(
+  Preprocessor(Region("#", PreprocRegion, RegionName(Identifier))),
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    ")",
+    EndProcedure
+  ),
+  Preprocessor(EndRegion("#", PreprocEndRegion))
+)
+
+# For-each loop with method call
+
+Процедура Т()
+  Для Каждого Элемент Из Коллекция Цикл
+    Сообщить(Элемент.Имя);
+  КонецЦикла;
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(",
+    ")",
+    BodyStatement(
+      ForEachStatement(
+        For,
+        Each,
+        Identifier,
+        In,
+        Identifier,
+        Do,
+        BodyStatement(
+          CallStatement(
+            Identifier,
+            "(",
+            Identifier,
+            PropertyAccess(".", Identifier),
+            ")"
+          ),
+          ";"
+        ),
+        EndDo
+      )
+    ),
+    BodyStatement(";"),
+    EndProcedure
+  )
+)

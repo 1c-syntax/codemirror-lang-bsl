@@ -1,0 +1,386 @@
+// Lezer grammar for 1C:Enterprise (BSL) / OneScript
+//
+// Structure based on https://github.com/1c-syntax/bsl-parser (ANTLR4).
+// Style mapping informed by the SemanticTokensProvider tree in
+// https://github.com/1c-syntax/bsl-language-server and the TextMate grammar
+// in https://github.com/1c-syntax/vsc-language-1c-bsl.
+//
+// Case-insensitive keyword matching is implemented via @external specialize
+// in `./tokens.ts` because Lezer cannot match keywords case-insensitively at
+// the lexer level and BSL keywords come in parallel Russian and English variants.
+
+@top Module {
+  Shebang?
+  moduleItem*
+}
+
+moduleItem {
+  ModuleAnnotation |
+  Preprocessor |
+  VarStatement |
+  ProcedureDecl |
+  FunctionDecl |
+  BodyStatement
+}
+
+// ---- Module-level shebang / use directives ----
+
+Shebang { ShebangLine }
+
+ModuleAnnotation {
+  PreprocUseDirective |
+  PreprocNativeDirective
+}
+
+PreprocUseDirective { "#" PreprocUse useTarget }
+useTarget { String | Identifier }
+PreprocNativeDirective { "#" PreprocNative }
+
+// ---- Compiler directives & annotations ----
+
+Annotation {
+  "&" AnnotationName AnnotationParams?
+}
+
+AnnotationName { Identifier }
+
+AnnotationParams {
+  "(" (AnnotationParam ("," AnnotationParam)*)? ")"
+}
+
+AnnotationParam {
+  AnnotationParamName ("=" annotationValue)? |
+  annotationValue
+}
+
+AnnotationParamName { Identifier }
+
+annotationValue {
+  constValue |
+  Annotation
+}
+
+// Decoration prefixes only Annotations. Preprocessor directives sit at top-level
+// or inside a body but are not folded into the declaration node (this mirrors
+// how the LSP semantic-token provider treats them as independent ranges).
+decoration { Annotation }
+
+// ---- Variables ----
+
+// Trailing semicolon is required to disambiguate from a bare `;` statement
+// (LR(1) cannot pick between reducing here and shifting `;` as the next stmt).
+VarStatement {
+  decoration*
+  Var varDeclList ";"
+}
+
+varDeclList { VarDeclaration ("," VarDeclaration)* }
+
+VarDeclaration { Identifier Export? }
+
+// ---- Subroutines ----
+
+ProcedureDecl {
+  decoration*
+  Async?
+  Procedure SubName "(" paramList? ")" Export?
+  body
+  EndProcedure
+}
+
+FunctionDecl {
+  decoration*
+  Async?
+  Function SubName "(" paramList? ")" Export?
+  body
+  EndFunction
+}
+
+SubName { Identifier }
+
+paramList { Param ("," Param)* }
+
+Param {
+  Annotation*
+  Val?
+  Identifier ("=" DefaultValue)?
+}
+
+DefaultValue { unaryConstValue }
+
+body { (BodyStatement | Preprocessor)* }
+
+// ---- Statements ----
+
+// Flat (non-block) statements MUST end with `;`. This is the BSL convention
+// in practice and it gives the parser an unambiguous anchor for optional
+// trailing expressions (e.g. `Return foo` vs `Return; foo` — both grammatical
+// without a required separator). Block statements (If/While/For/Try) end at
+// their dedicated end-keyword, so no trailing `;` is required there.
+//
+// Known v1 limitation: trailing semicolons are required after `Возврат`,
+// `Продолжить`, `Прервать`, `Вызватьисключение`, `Выполнить`, `Перейти`,
+// `ДобавитьОбработчик`, `УдалитьОбработчик`, assignment, and call statements.
+// ANTLR's grammar accepts them as optional, but that introduces LR ambiguity
+// with valid statement starters like `Identifier`/`Ждать`. See v2 TODO.
+BodyStatement {
+  Label? flatStatement ";" |
+  Label? blockStatement |
+  ";"
+}
+
+flatStatement {
+  Assignment |
+  CallStatement |
+  ReturnStatement |
+  ContinueStatement |
+  BreakStatement |
+  RaiseStatement |
+  ExecuteStatement |
+  GotoStatement |
+  AddHandlerStatement |
+  RemoveHandlerStatement
+}
+
+blockStatement {
+  IfStatement |
+  WhileStatement |
+  ForStatement |
+  ForEachStatement |
+  TryStatement
+}
+
+Label { "~" LabelName ":" }
+LabelName { Identifier }
+
+Assignment { lvalue "=" expression }
+
+CallStatement { reference }
+
+IfStatement {
+  If expression Then body
+  ElsifBranch*
+  ElseBranch?
+  EndIf
+}
+ElsifBranch { Elsif expression Then body }
+ElseBranch { Else body }
+
+WhileStatement { While expression Do body EndDo }
+
+ForStatement {
+  For Identifier "=" expression To expression Do body EndDo
+}
+
+ForEachStatement {
+  For Each Identifier In expression Do body EndDo
+}
+
+TryStatement { Try body Except body EndTry }
+
+// Statements with optional trailing expression — the BodyStatement-level
+// mandatory `;` provides unambiguous lookahead for the optional.
+ReturnStatement { Return expression? }
+ContinueStatement { Continue }
+BreakStatement { Break }
+RaiseStatement { Raise expression? }
+ExecuteStatement { Execute expression }
+GotoStatement { Goto "~" Identifier }
+AddHandlerStatement { AddHandler expression "," expression }
+RemoveHandlerStatement { RemoveHandler expression "," expression }
+
+// ---- Expressions ----
+//
+// Precedence (lowest → highest):
+//   or  →  and  →  not  →  cmp  →  add  →  mul  →  unary  →  postfix
+
+expression {
+  BinaryExpr |
+  UnaryExpr |
+  primary
+}
+
+BinaryExpr {
+  expression !or  OrOp  expression |
+  expression !and AndOp expression |
+  expression !cmp CmpOp expression |
+  expression !add AddOp expression |
+  expression !mul MulOp expression
+}
+
+UnaryExpr { !unary UnaryOp expression }
+
+OrOp  { Or }
+AndOp { And }
+CmpOp { "=" | "<>" | "<" | "<=" | ">" | ">=" }
+AddOp { "+" | "-" }
+MulOp { "*" | "/" | "%" }
+UnaryOp { "+" | "-" | Not }
+
+primary {
+  constValue |
+  TernaryOp |
+  NewExpr |
+  AwaitExpr |
+  ParenExpr |
+  reference
+}
+
+ParenExpr { "(" expression ")" accessChain }
+
+reference { refHead accessChain }
+
+refHead { Identifier callArgs? }
+
+accessChain { access* }
+
+access {
+  PropertyAccess |
+  CallAccess |
+  IndexAccess
+}
+
+PropertyAccess { "." Identifier }
+CallAccess { "." Identifier callArgs }
+IndexAccess { "[" expression "]" }
+
+callArgs { "(" callArgsList? ")" }
+callArgsList { callArg ("," callArg)* }
+callArg { expression }
+
+TernaryOp { "?" "(" expression "," expression "," expression ")" }
+NewExpr { New (Identifier callArgs? | callArgs) }
+AwaitExpr { Await expression }
+
+lvalue { refHead accessChain }
+
+constValue {
+  Number |
+  String |
+  Date |
+  True | False | Undefined | Null
+}
+
+unaryConstValue {
+  UnaryOp? constValue
+}
+
+// ---- Preprocessor ----
+
+Preprocessor {
+  Region |
+  EndRegion |
+  PreprocessorIf |
+  PreprocessorElsif |
+  PreprocessorElse |
+  PreprocessorEndIf
+}
+
+Region { "#" PreprocRegion RegionName }
+EndRegion { "#" PreprocEndRegion }
+RegionName { Identifier }
+
+PreprocessorIf { "#" PreprocIf preprocExpr PreprocThen }
+PreprocessorElsif { "#" PreprocElsif preprocExpr PreprocThen }
+PreprocessorElse { "#" PreprocElse }
+PreprocessorEndIf { "#" PreprocEndIf }
+
+preprocExpr {
+  PreprocNot preprocExpr |
+  "(" preprocExpr ")" |
+  preprocExpr !preprocBool preprocBoolOp preprocExpr |
+  PreprocSymbol
+}
+
+PreprocSymbol { Identifier }
+
+preprocBoolOp { PreprocOr | PreprocAnd }
+
+// ---- Precedence ----
+
+@precedence {
+  unary @right,
+  postfix @left,
+  mul @left,
+  add @left,
+  cmp @left,
+  and @left,
+  or @left,
+  preprocBool @left
+}
+
+// ---- Skipping ----
+
+@skip { space | LineComment }
+
+// ---- Tokens ----
+
+@tokens {
+  space { @whitespace+ }
+
+  LineComment { "//" ![\n]* }
+
+  // Identifier — Latin + Cyrillic + underscore, then alphanumeric.
+  // BSL is case-insensitive; keyword resolution happens via @external specialize.
+  identifierChar { $[a-zA-Z_Ѐ-ӿԀ-ԯ] }
+  identifierContinue { $[a-zA-Z0-9_Ѐ-ӿԀ-ԯ] }
+  Identifier { identifierChar identifierContinue* }
+
+  // Numeric literals.
+  Number { $[0-9]+ ("." $[0-9]*)? }
+
+  // String literal — both single-line and multi-line. Multi-line continuation:
+  // newline, optional whitespace, vertical bar `|`, then more content.
+  String {
+    '"' (![\n\r"] | '""')*
+    ($[\n\r] $[ \t]* "|" (![\n\r"] | '""')*)*
+    '"'
+  }
+
+  // Date literal `'YYYYMMDDhhmmss'`.
+  Date { "'" ![\n\r']* "'" }
+
+  // Shebang line — matched as a single token so its content is not parsed.
+  ShebangLine { "#!" ![\n]* }
+
+  // Punctuation
+  "(" ")" "[" "]" "{" "}"
+  "," ":" ";" "."
+  "+" "-" "*" "/" "%"
+  "=" "<>" "<=" ">=" "<" ">"
+  "?" "&" "~" "#"
+
+  @precedence { "<=", "<>", "<" }
+  @precedence { ">=", ">" }
+  @precedence { LineComment, "/" }
+  @precedence { Number, "." }
+  @precedence { ShebangLine, "#" }
+}
+
+// ---- External specialization: case-insensitive keyword matching ----
+
+@external specialize {Identifier} keyword from "./tokens" {
+  Procedure, Function, EndProcedure, EndFunction,
+  Export, Val, Var,
+  If, Then, Elsif, Else, EndIf,
+  While, Do, EndDo,
+  For, To, Each, In,
+  Try, Except, EndTry,
+  Return, Continue, Break, Raise, Execute, Goto,
+  New, AddHandler, RemoveHandler,
+  Async, Await,
+  And, Or, Not,
+  True, False, Undefined, Null,
+
+  // Preprocessor directive names — same identifier surface, different meaning
+  // when following `#`. Surfaced as distinct terms so styleTags can colour them.
+  // NOTE: global specialization — `Использовать`, `Область`, `Native`, etc.
+  // used as ordinary identifiers will be tagged as preprocessor tokens. BSL
+  // convention does not collide with these names in practice; context-sensitive
+  // resolution is on the v2 TODO list.
+  PreprocIf, PreprocElsif, PreprocElse, PreprocEndIf, PreprocThen,
+  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative,
+  PreprocNot, PreprocOr, PreprocAnd
+}
+
+@detectDelim

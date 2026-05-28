@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>codemirror-lang-bsl — demo</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; padding: 16px; max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 18px; }
+    .cm-editor { border: 1px solid #ccc; }
+    .cm-editor.cm-focused { outline: none; }
+  </style>
+</head>
+<body>
+<h1>codemirror-lang-bsl demo</h1>
+<p>Откройте файл через esbuild/vite/dev-server, или собранный bundle. Чисто статически
+   браузер сам ESM-граф CodeMirror не разрешит — нужен bundler. См. <code>README.md → Build &amp; test</code>.</p>
+<div id="editor"></div>
+<script type="module">
+  import { EditorView, basicSetup } from "codemirror"
+  import { bsl } from "../dist/index.js"
+
+  const sample = `// Пример модуля 1С
+&НаКлиенте
+Процедура ПриОткрытии(Отказ)
+    Сообщить("Привет, " + Объект.Наименование + "!");
+
+    Если ЗначениеЗаполнено(Объект.Дата) Тогда
+        Возврат;
+    КонецЕсли;
+
+    Для Каждого Строка Из Объект.Товары Цикл
+        Строка.Сумма = Строка.Количество * Строка.Цена;
+    КонецЦикла;
+
+    Попытка
+        Результат = ВыполнитьЗапрос();
+    Исключение
+        ВызватьИсключение "Ошибка запроса: " + ОписаниеОшибки();
+    КонецПопытки;
+КонецПроцедуры
+
+#Область СлужебныеПроцедуры
+
+Функция ВыполнитьЗапрос() Экспорт
+    Запрос = Новый Запрос;
+    Запрос.Текст =
+        "ВЫБРАТЬ
+        |    Контрагенты.Наименование КАК Имя
+        |ИЗ
+        |    Справочник.Контрагенты КАК Контрагенты
+        |ГДЕ
+        |    Контрагенты.Поставщик = ИСТИНА";
+    Возврат Запрос.Выполнить();
+КонецФункции
+
+#КонецОбласти
+`
+
+  new EditorView({
+    doc: sample,
+    extensions: [basicSetup, bsl()],
+    parent: document.getElementById("editor")
+  })
+</script>
+</body>
+</html>
