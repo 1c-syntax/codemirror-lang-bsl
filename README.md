@@ -146,41 +146,37 @@ the rollup config copies into `docs/index.html` alongside the bundled
 
 Releases are cut by publishing a GitHub Release with a tag of the form
 `v<version>` (matching `package.json#version`). The
-`.github/workflows/publish.yml` workflow then builds, tests, and runs
-`npm publish --provenance --access public` against npmjs.org.
+`.github/workflows/publish.yml` workflow builds, tests, and runs
+`npm publish --provenance --access public` against npmjs.org. Authentication
+is done via [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers)
+— no long-lived `NPM_TOKEN` secret is needed; npm exchanges the workflow's
+OIDC token for a short-lived credential at publish time.
 
-### First-time setup (NPM_TOKEN)
-
-npm does not allow configuring Trusted Publishers for a package that does
-not exist yet, so the first release must be authenticated with an
-[Automation token](https://docs.npmjs.com/about-access-tokens):
-
-1. Generate an **Automation** access token at
-   <https://www.npmjs.com/settings/USERNAME/tokens> (a user-scope token works;
-   org-scope is fine too if the package lives under an npm org).
-2. Add it as a repository secret named `NPM_TOKEN` at
-   <https://github.com/1c-syntax/codemirror-lang-bsl/settings/secrets/actions>.
-3. Bump `package.json#version`, commit, push, then create a Release at
-   <https://github.com/1c-syntax/codemirror-lang-bsl/releases/new> with tag
-   `v<version>`. The workflow picks up the release-published event and
-   publishes the tarball.
-
-The `workflow_dispatch` trigger has a `dry_run` input that runs
-`npm publish --dry-run` against the same workflow — useful for verifying
-the tarball contents and packaged size before cutting a real release.
-
-### After the first release (Trusted Publishing)
-
-Once `@1c-syntax/codemirror-lang-bsl` exists on npmjs.org, switch to
-[Trusted Publishing](https://docs.npmjs.com/trusted-publishers) to drop the
-NPM_TOKEN secret:
+### Setup (one-time)
 
 1. <https://www.npmjs.com/package/@1c-syntax/codemirror-lang-bsl/access> →
    *Trusted Publishers* → *Add*
-2. Provider: GitHub Actions; Repository: `1c-syntax/codemirror-lang-bsl`;
-   Workflow file: `.github/workflows/publish.yml`; Environment: `npm`.
-3. Remove the `NPM_TOKEN` secret from the repo (the `NODE_AUTH_TOKEN`
-   env var still gets populated, just from npm's OIDC exchange).
+2. Provider: **GitHub Actions**
+3. Repository owner: `1c-syntax`, Repository: `codemirror-lang-bsl`
+4. Workflow file name: `publish.yml`
+5. Environment: `npm`
+
+That's it — no secrets, no tokens. The workflow's `id-token: write`
+permission plus `--provenance` are enough; npm verifies the OIDC token
+against the configured trusted publisher and accepts the upload.
+
+### Cutting a release
+
+1. Bump `package.json#version`, commit, push.
+2. <https://github.com/1c-syntax/codemirror-lang-bsl/releases/new> →
+   tag `v<version>` (matching `package.json#version`) → *Publish release*.
+3. The `Publish to npm` workflow picks up the `release.published` event,
+   verifies tag-vs-version, builds, tests, and runs `npm publish`.
+
+### Dry-run before cutting
+
+`workflow_dispatch` on `Publish to npm` accepts a `dry_run` input. Run it
+to validate auth, build, and tarball contents without actually publishing.
 
 ## License
 

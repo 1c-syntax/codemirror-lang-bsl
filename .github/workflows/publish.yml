@@ -10,10 +10,10 @@ on:
         type: boolean
         default: false
 
-# Required by `npm publish --provenance`: the workflow exchanges its OIDC
-# token for a sigstore signing identity that npmjs.org records alongside the
-# tarball. Consumers can then verify the artifact came from this specific
-# repo + workflow run via `npm view @1c-syntax/codemirror-lang-bsl provenance`.
+# Required by npm's Trusted Publishing flow: the workflow exchanges its OIDC
+# token for an npm credential at publish time, so no long-lived NPM_TOKEN
+# secret is needed. Together with --provenance this also records a sigstore
+# attestation pointing back at this exact workflow run.
 permissions:
   contents: read
   id-token: write
@@ -35,11 +35,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          # Tells npm which registry to ask for an OIDC-bound credential at
+          # publish time. Required even without a token, otherwise the CLI
+          # falls back to whatever a global .npmrc points at.
           registry-url: "https://registry.npmjs.org/"
-          # Forces auth for the public registry even though our committed
-          # .npmrc only sets `registry`. Without this, `npm publish` would
-          # use the anonymous fetch path and reject the upload.
-          always-auth: true
+
+      # Node 22 LTS ships with npm 10.9.x; Trusted Publishing requires
+      # npm >= 11.5.1, so we upgrade in place before any publish step.
+      - name: Upgrade npm for Trusted Publishing support
+        run: npm install --global npm@latest
 
       - run: npm ci
 
@@ -61,11 +65,7 @@ jobs:
       - name: Publish (dry-run)
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
         run: npm publish --dry-run --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
