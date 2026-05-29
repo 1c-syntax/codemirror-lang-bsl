@@ -49,7 +49,17 @@ ParenGroup { LParen fragment* RParen }
 // pick the whole group out as configuration metadata.
 BraceGroup { LBrace fragment* RBrace }
 
-Parameter { Ampersand Identifier }
+// Parameter name accepts any identifier-shaped token, including ones that
+// the @external specialize hook turns into category keywords (the most
+// common case is `&НачалоПериода` where `началопериода` matches the
+// BEGINOFPERIOD function name in the SDBL keyword table). Without this the
+// parser produces an error token where the keyword sits and the parameter
+// stops being recognised.
+Parameter { Ampersand sdblName }
+sdblName {
+  Identifier | StmtKw | OpKw | FuncKw | TypeKw | MdoKw | VtKw | FieldKw |
+  BoolLit | NullLit | UndefinedLit
+}
 
 AddOp { Plus | Minus }
 MulOp { Mul | Quotient }

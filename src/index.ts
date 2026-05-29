@@ -118,11 +118,15 @@ export const sdblLanguage = sdblParser.configure({
       Identifier: t.variableName,
       Number: t.number,
       StringLit: t.string,
-      // Parameter references (&ИмяПараметра) — tagged as a typed local so
-      // they stand out from regular identifiers; the `&` punctuation gets
-      // the modifier tag so it renders together with the parameter name.
-      "Parameter/Identifier": t.local(t.variableName),
-      "Parameter/Ampersand": t.modifier,
+      // Parameter references (&ИмяПараметра) — the `sdblName` rule is
+      // inlined (lowercase), so its children sit directly under Parameter
+      // in the tree. Both the `&` and every possible inner-leaf token
+      // (Identifier *or* a category-keyword term that the specializer
+      // produced for the name) get the same `t.special(t.variableName)`
+      // tag so the parameter renders as one visual block. We enumerate the
+      // keyword categories because @lezer/highlight resolves at the leaf
+      // level and the global FuncKw / StmtKw / etc. tags would otherwise win.
+      "Parameter/Ampersand Parameter/Identifier Parameter/StmtKw Parameter/OpKw Parameter/FuncKw Parameter/TypeKw Parameter/MdoKw Parameter/VtKw Parameter/FieldKw Parameter/BoolLit Parameter/NullLit Parameter/UndefinedLit": t.special(t.variableName),
       // Punctuation
       "LParen RParen": t.paren,
       // `{...}` configuration blocks — tag the whole group as t.meta so a
