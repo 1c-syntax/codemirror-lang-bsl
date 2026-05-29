@@ -250,7 +250,10 @@ export const bslLanguage = LRLanguage.define({
         "PropertyAccess/dotKeyword CallAccess/dotKeyword": t.propertyName,
 
         // ---- Annotations (compiler directives like &НаКлиенте) ----
-        "Annotation/AnnotationName": t.annotation,
+        // The `&` punctuation is tagged together with the annotation name so
+        // theming treats `&НаКлиенте` as one visual unit instead of leaving
+        // the `&` painted as ordinary punctuation.
+        "Annotation/AnnotationName Annotation/&": t.annotation,
 
         // ---- Preprocessor ----
         // bsl-language-server: #Использовать and #Область → Namespace,
@@ -262,6 +265,10 @@ export const bslLanguage = LRLanguage.define({
         // Preprocessor #Если/.../КонецЕсли — shared BSL keyword terms,
         // discriminated as macros only when sitting inside a preproc directive.
         "PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or": t.macroName,
+        // `#` punctuation in every preprocessor variant is re-tagged as
+        // processingInstruction so it sits in the same colour bucket as the
+        // surrounding directive instead of being left as bare punctuation.
+        "PreprocessorIf/# PreprocessorElsif/# PreprocessorElse/# PreprocessorEndIf/# Region/# EndRegion/# PreprocessorDelete/# PreprocessorEndDelete/# PreprocessorInsert/# PreprocessorEndInsert/# PreprocUseDirective/# PreprocNativeDirective/#": t.processingInstruction,
         ShebangLine: t.processingInstruction,
         "Region/RegionName": t.variableName,
         "Region EndRegion PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocUseDirective PreprocNativeDirective Shebang": t.processingInstruction,
@@ -282,6 +289,9 @@ export const bslLanguage = LRLanguage.define({
         ":": t.punctuation,
         ".": t.derefOperator,
         "?": t.controlOperator,
+        // Default colour for `&`/`~`/`#` outside their usual contexts —
+        // contextual selectors above (Annotation/&, Preprocessor/#, etc.)
+        // take precedence when the token sits inside the matching parent.
         "& ~ #": t.punctuation,
 
         // ---- Comments ----
