@@ -52,6 +52,26 @@
 
 import {parser as bslParser} from "./bsl.grammar"
 import {parser as sdblParser} from "./sdbl.grammar"
+
+// Every BSL keyword that the @external specialize hook might produce, so a
+// styleTags selector can enumerate them where they appear after `.`. Kept
+// here so `index.ts` doesn't drown in a 40-token-wide selector literal.
+const BSL_KEYWORDS_AFTER_DOT = [
+  "Procedure", "Function", "EndProcedure", "EndFunction",
+  "Export", "Val", "Var",
+  "If", "Then", "Elsif", "Else", "EndIf",
+  "While", "Do", "EndDo",
+  "For", "To", "Each", "In",
+  "Try", "Except", "EndTry",
+  "Return", "Continue", "Break", "Raise", "Execute", "Goto",
+  "New", "AddHandler", "RemoveHandler",
+  "Async", "Await",
+  "And", "Or", "Not",
+  "True", "False", "Undefined", "Null"
+]
+const DOT_KEYWORD_SELECTORS = ["PropertyAccess", "CallAccess"]
+  .flatMap(parent => BSL_KEYWORDS_AFTER_DOT.map(k => `${parent}/${k}`))
+  .join(" ")
 import {
   LRLanguage,
   LanguageSupport,
@@ -259,8 +279,12 @@ export const bslLanguage = LRLanguage.define({
         // After `.` a BSL keyword may be used as a method/property name
         // (`Запрос.Выполнить()`, `Объект.Значение`, …). Re-tag every keyword
         // term to propertyName when it sits inside an access node, overriding
-        // the default control-keyword colouring those terms get elsewhere.
-        "PropertyAccess/dotKeyword CallAccess/dotKeyword": t.propertyName,
+        // the default control-keyword/definitionKeyword/etc. colouring those
+        // terms get elsewhere. The `dotKeyword` rule is lowercase (inlined),
+        // so its children sit directly under PropertyAccess/CallAccess and
+        // each leaf keyword has to be enumerated explicitly — see
+        // DOT_KEYWORD_SELECTORS at the top of this file.
+        [DOT_KEYWORD_SELECTORS]: t.propertyName,
 
         // ---- Annotations (compiler directives like &НаКлиенте) ----
         // Every leaf token of an annotation gets `t.annotation` so the whole
