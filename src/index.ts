@@ -103,12 +103,16 @@ export const sdblLanguage = sdblParser.configure({
       FuncKw: t.function(t.keyword),
       // Built-in type names (Булево/Число/Строка used in CAST etc.).
       TypeKw: t.typeName,
-      // Metadata-object roots (Справочник/Документ/РегистрСведений/…). The
-      // bsl-language-server tags these as Namespace at the LSP level.
+      // Metadata-object roots (Справочник/Документ/РегистрСведений/…).
+      // bsl-language-server tags them as Namespace at the LSP level.
       MdoKw: t.namespace,
-      // Virtual table suffixes (.Остатки, .СрезПоследних, .Обороты). Tagged
-      // as className so themes can distinguish them from base metadata.
-      VtKw: t.className,
+      // Identifier components inside an MdoRef path become Class — the
+      // table name (`Контрагенты` in `Справочник.Контрагенты`) and the
+      // optional virtual-table suffix (`Остатки` in
+      // `РегистрНакопления.ТоварыНаСкладах.Остатки`) both qualify. Outside
+      // of MdoRef the same words stay as plain variableName so query
+      // aliases like `КАК Остатки` don't get the metadata-class colour.
+      "MdoRef/Identifier": t.className,
       // Field accessors (ТочкаМаршрута, ROUTEPOINT) — propertyName tier.
       FieldKw: t.propertyName,
       // Literals.
@@ -126,7 +130,7 @@ export const sdblLanguage = sdblParser.configure({
       // tag so the parameter renders as one visual block. We enumerate the
       // keyword categories because @lezer/highlight resolves at the leaf
       // level and the global FuncKw / StmtKw / etc. tags would otherwise win.
-      "Parameter/Ampersand Parameter/Identifier Parameter/StmtKw Parameter/OpKw Parameter/FuncKw Parameter/TypeKw Parameter/MdoKw Parameter/VtKw Parameter/FieldKw Parameter/BoolLit Parameter/NullLit Parameter/UndefinedLit": t.special(t.variableName),
+      "Parameter/Ampersand Parameter/Identifier Parameter/StmtKw Parameter/OpKw Parameter/FuncKw Parameter/TypeKw Parameter/MdoKw Parameter/FieldKw Parameter/BoolLit Parameter/NullLit Parameter/UndefinedLit": t.special(t.variableName),
       // Punctuation
       "LParen RParen": t.paren,
       // `{...}` configuration blocks — tag the whole group as t.meta so a

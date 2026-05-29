@@ -8,7 +8,7 @@
 // SDBLLexer.g4`.
 
 import {
-  StmtKw, OpKw, FuncKw, TypeKw, MdoKw, VtKw, FieldKw,
+  StmtKw, OpKw, FuncKw, TypeKw, MdoKw, FieldKw,
   BoolLit, NullLit, UndefinedLit
 } from "./sdbl.grammar.terms"
 
@@ -166,27 +166,20 @@ const MDO_WORDS = [
   "externaldatasource", "внешнийисточникданных"
 ]
 
-// Virtual table suffixes that appear after the metadata-object name:
-// e.g. `РегистрНакопления.Товары.Остатки`, `РегистрСведений.Курсы.СрезПоследних`.
-const VT_WORDS = [
-  "balance", "остатки",
-  "balanceandturnovers", "остаткииобороты",
-  "boundaries", "границы",
-  "drcrturnovers", "оборотыдткт",
-  "extdimensions", "субконто",
-  "recordswithextdimensions", "движенияссубконто",
-  "scheduledata", "данныеграфика",
-  "slicefirst", "срезпервых",
-  "slicelast", "срезпоследних",
-  "taskbyperformer", "задачипоисполнителю",
-  "turnovers", "обороты",
-  "actualactionperiod", "фактическийпериоддействия",
-  "table", "таблица",
-  "cube", "куб",
-  "dimensiontable", "таблицаизмерения"
-]
+// Virtual-table suffixes are NOT globally specialized. Words like "Остатки",
+// "Обороты", "СрезПоследних" double as legitimate query aliases (e.g.
+// `ВЫБРАТЬ Остатки.Количество ИЗ ... КАК Остатки`), and globally tagging
+// them as VtKw paints those alias references yellow even when the user
+// never intended a metadata-object reference. ANTLR's BSL parser side-steps
+// this with a lexer DOT_MODE that only recognises BALANCE_VT etc. right
+// after a dot inside a metadata path; we cannot replicate that mode purely
+// at the specializer level, so we let the structural MdoRef rule in the
+// grammar collect them as ordinary Identifiers and rely on contextual
+// styleTags (MdoRef/Identifier → className) to colour them when they sit
+// at the tail of a metadata path.
 
-// Special field accessors (route points etc.).
+// Special field accessors (route points etc.). These are unambiguous —
+// `ТочкаМаршрута` doesn't double as an alias name in real queries.
 const FIELD_WORDS = [
   "routepoint", "точкамаршрута", "точки"
 ]
@@ -197,7 +190,6 @@ for (const w of OP_WORDS) MAP[w] = OpKw
 for (const w of FUNC_WORDS) MAP[w] = FuncKw
 for (const w of TYPE_WORDS) MAP[w] = TypeKw
 for (const w of MDO_WORDS) MAP[w] = MdoKw
-for (const w of VT_WORDS) MAP[w] = VtKw
 for (const w of FIELD_WORDS) MAP[w] = FieldKw
 
 // Literals

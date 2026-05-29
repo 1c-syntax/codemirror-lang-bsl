@@ -22,8 +22,7 @@ fragment {
   OpKw |
   FuncKw |
   TypeKw |
-  MdoKw |
-  VtKw |
+  MdoRef |
   FieldKw |
   BoolLit |
   NullLit |
@@ -39,6 +38,18 @@ fragment {
   CmpOp |
   Punct
 }
+
+// Metadata-object reference path: `Справочник.Контрагенты`,
+// `РегистрНакопления.ТоварыНаСкладах.Остатки`, etc. Only inside this
+// structure do the trailing identifier components mean "table name" and
+// "virtual table" — at the lexer level we keep them as plain Identifier
+// so they don't get the namespace/class colour in other positions
+// (e.g. an alias `Остатки` defined via `КАК Остатки`).
+//
+// `!mdoTail` biases the parser to shift each `Dot Identifier` into the
+// current MdoRef rather than reduce early (which would leak the dot into
+// a sibling Punct(Dot) and split the path).
+MdoRef { MdoKw (!mdoTail Dot Identifier)* }
 
 ParenGroup { LParen fragment* RParen }
 
@@ -57,7 +68,7 @@ BraceGroup { LBrace fragment* RBrace }
 // stops being recognised.
 Parameter { Ampersand sdblName }
 sdblName {
-  Identifier | StmtKw | OpKw | FuncKw | TypeKw | MdoKw | VtKw | FieldKw |
+  Identifier | StmtKw | OpKw | FuncKw | TypeKw | MdoKw | FieldKw |
   BoolLit | NullLit | UndefinedLit
 }
 
@@ -67,6 +78,12 @@ CmpOp { Assign | NotEqual | Less | LessOrEqual | Greater | GreaterOrEqual }
 Punct { Comma | Semicolon | Colon | Dot | Hash }
 
 // ---- Skipping ----
+
+@precedence {
+  // Used by MdoRef to prefer extending the path with another `Dot
+  // Identifier` over reducing the MdoRef early.
+  mdoTail @left
+}
 
 @skip { space | LineComment }
 
@@ -138,7 +155,6 @@ Punct { Comma | Semicolon | Colon | Dot | Hash }
   FuncKw,
   TypeKw,
   MdoKw,
-  VtKw,
   FieldKw,
   BoolLit,
   NullLit,
