@@ -27,7 +27,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm run build:demo
+      # build:site = build:demo + build:docs (TypeDoc).
+      # Demo lands at docs/{index.html,bundle.js}; API reference at docs/api/.
+      - run: npm run build:site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs

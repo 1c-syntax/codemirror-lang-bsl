@@ -1,0 +1,33 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "name": "@1c-syntax/codemirror-lang-bsl",
+  "readme": "README.md",
+  "tsconfig": "tsconfig.json",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeExternals": true,
+  "githubPages": false,
+  "navigationLinks": {
+    "GitHub": "https://github.com/1c-syntax/codemirror-lang-bsl",
+    "Live demo": "https://1c-syntax.github.io/codemirror-lang-bsl/",
+    "npm": "https://www.npmjs.com/package/@1c-syntax/codemirror-lang-bsl"
+  },
+  "hideGenerator": true,
+  "sort": ["source-order"],
+  "categorizeByGroup": false,
+  "externalSymbolLinkMappings": {
+    "@codemirror/language": {
+      "LanguageSupport": "https://codemirror.net/docs/ref/#language.LanguageSupport",
+      "LRLanguage": "https://codemirror.net/docs/ref/#language.LRLanguage",
+      "Language": "https://codemirror.net/docs/ref/#language.Language"
+    },
+    "@codemirror/state": {
+      "EditorState": "https://codemirror.net/docs/ref/#state.EditorState"
+    },
+    "@codemirror/view": {
+      "EditorView": "https://codemirror.net/docs/ref/#view.EditorView"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+version: 2
+updates:
+  # CodeMirror / Lezer upstream tracks the surface we depend on directly.
+  # Grouping by family keeps PR noise down: when @codemirror releases a
+  # coordinated bump across packages we get one PR, not ten.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Moscow
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    labels:
+      - dependencies
+    groups:
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - "codemirror"
+      lezer:
+        patterns:
+          - "@lezer/*"
+      rollup:
+        patterns:
+          - "rollup"
+          - "@rollup/*"
+      test-tooling:
+        patterns:
+          - "mocha"
+          - "typescript"
+          - "tslib"
+          - "@types/*"
+
+  # Keep actions pinned to current major; auto-bump minor/patch.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Moscow
+    open-pull-requests-limit: 3
+    labels:
+      - ci

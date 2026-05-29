@@ -17,6 +17,9 @@ control flow, async function, region), another with a function whose query
 string body is highlighted by the embedded SDBL grammar. Add `?theme=light` to
 the URL for the light theme.
 
+API reference (generated from JSDoc with TypeDoc):
+**<https://1c-syntax.github.io/codemirror-lang-bsl/api/>**.
+
 The grammar is implemented in [Lezer](https://lezer.codemirror.net/), references
 the [`1c-syntax/bsl-parser`](https://github.com/1c-syntax/bsl-parser) ANTLR4
 grammars for structure and the
@@ -132,8 +135,10 @@ deployed automatically by `.github/workflows/pages.yml` on every push to
 
 ```bash
 npm install
-npm run build       # main library, dist/
-npm run build:demo  # static demo, docs/
+npm run build         # main library → dist/
+npm run build:demo    # static demo → docs/{index.html,bundle.js}
+npm run build:docs    # TypeDoc API reference → docs/api/
+npm run build:site    # demo + docs (CI uses this for gh-pages)
 # serve docs/ via any HTTP server, e.g.
 python3 -m http.server -d docs 8080
 ```
