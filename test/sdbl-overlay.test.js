@@ -34,7 +34,10 @@ describe("SDBL parser standalone", () => {
     const repr = sdblLanguage.parse(
       "ВЫБРАТЬ {Поле1, Поле2} ИЗ Справочник.Контрагенты"
     ).toString()
-    assert.match(repr, /BraceGroup\(LBrace[^)]*RBrace\)/)
+    // Inner Punct(Comma) contains a ')' so we can't use [^)]*; this matcher
+    // just checks the BraceGroup opens with LBrace and contains RBrace.
+    assert.match(repr, /BraceGroup\(LBrace,/)
+    assert.match(repr, /,RBrace\)/)
     // No error markers anywhere in the tree.
     assert.doesNotMatch(repr, /⚠/)
   })
