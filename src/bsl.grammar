@@ -299,13 +299,26 @@ dotKeyword {
 }
 IndexAccess { LBrack expression RBrack }
 
-// Argument list — comma-skipping (`Метод(a,,b)` / `Метод(,a)`) is not
-// supported. Removed the failed attempt to model `,` as a stand-alone item;
-// it fundamentally collides with `f(g(...))` inner-call parsing in LR(1).
-// See README → Limitations for context.
-callArgs { LParen callArgsList? RParen }
+// Argument lists allow trailing/leading/skipped arguments. Mirrors ANTLR's
+// `callParamList : callParam (COMMA callParam)*` / `callParam : expression?`
+// — empty slots are real parser positions, not just "missing tokens".
+// `@dynamicPrecedence=1` on the with-expression alternative tells Lezer's
+// GLR engine to prefer the parse that includes the expression over an
+// empty callArg at every choice point.
+// callArg can be EMPTY (the `~callArgEmpty` marker stands in for ANTLR's
+// `callParam : expression?` empty branch — Lezer doesn't accept literally
+// empty productions, so an ambig-marked alternative carries the same
+// meaning). `()`, `(a)`, `(a, b)`, `(, a)`, `(a, , b)` all roll into the
+// same shape: `callArgsList` is always present, the empty slots show up
+// as bare `callArg` nodes with no `expression` child.
+callArgs { LParen callArgsList RParen }
 callArgsList { callArg (Comma callArg)* }
-callArg { expression }
+callArg {
+  callArgEmpty |
+  callArgValue
+}
+callArgEmpty { ~callArgEmpty }
+callArgValue[@dynamicPrecedence=1] { expression }
 
 TernaryOp { Question LParen expression Comma expression Comma expression RParen }
 NewExpr { New (Identifier callArgs? | callArgs) }
@@ -427,11 +440,14 @@ preprocBoolOp { Or | And }
   // Numeric literals.
   Number { $[0-9]+ ("." $[0-9]*)? }
 
-  // String literal — both single-line and multi-line. Multi-line continuation:
-  // newline, optional whitespace, vertical bar `|`, then more content.
+  // String literal — both single-line and multi-line. Multi-line
+  // continuation: one or more newlines (so blank lines between segments are
+  // tolerated, mirroring how ANTLR's token-stream STRINGPART approach lets
+  // blank rows fall on the HIDDEN channel), optional indentation, the
+  // vertical bar `|`, then more content.
   String {
     '"' (![\n\r"] | '""')*
-    ($[\n\r] $[ \t]* "|" (![\n\r"] | '""')*)*
+    ($[\n\r]+ $[ \t]* "|" (![\n\r"] | '""')*)*
     '"'
   }
 
