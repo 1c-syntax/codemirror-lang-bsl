@@ -108,7 +108,10 @@ Param {
 
 DefaultValue { unaryConstValue }
 
-body { (BodyStatement | Preprocessor)* }
+// Bodies allow local variable declarations (`Перем` inside a sub) in addition
+// to ordinary statements, mirroring ANTLR's `subVar`. Real-world BSL uses this
+// heavily — every variableSymbolTest.bsl-style sample has them.
+body { (BodyStatement | Preprocessor | VarStatement)* }
 
 // ---- Statements ----
 
@@ -117,10 +120,27 @@ body { (BodyStatement | Preprocessor)* }
 // followed by `;`. The `~blockSemi` ambiguity marker lets Lezer's GLR engine
 // resolve the shift/reduce choice between "consume the `;` as part of this
 // statement" vs "leave it for a bare-`;` next statement" at parse time.
+//
+// `Label` is also valid on its own (no following statement) — bare-label
+// goto-targets like `~ТочкаВозврата2:` at the end of a body. This matches
+// ANTLR which allows labels to terminate a code block too.
+// Optional trailing `;` matches ANTLR's permissive `SEMICOLON?` rule and
+// closes the documented Limitation #1: real-world BSL code routinely omits
+// the semicolon after `Возврат`/`Прервать` etc. as the last statement of a
+// body. `!stmtSemi` (declared in @precedence below) tells the parser to
+// shift the `;` into the current statement instead of reducing without it
+// and starting a fresh bare-`;` statement. `~labelOpt` is the GLR marker
+// that lets Label sit on its own *or* prefix the next statement.
 BodyStatement {
-  Label? flatStatement ";" |
-  Label? blockStatement ~blockSemi ";" |
-  Label? blockStatement ~blockSemi |
+  Label ~labelOpt flatStatement |
+  Label ~labelOpt flatStatement !stmtSemi ";" |
+  Label ~labelOpt blockStatement ~blockSemi |
+  Label ~labelOpt blockStatement ~blockSemi !stmtSemi ";" |
+  Label ~labelOpt |
+  flatStatement |
+  flatStatement !stmtSemi ";" |
+  blockStatement ~blockSemi |
+  blockStatement ~blockSemi !stmtSemi ";" |
   ";"
 }
 
@@ -174,14 +194,22 @@ ForEachStatement {
 
 TryStatement { Try body Except body EndTry }
 
-// Statements with optional trailing expression. `@dynamicPrecedence=1` biases
-// Lezer's GLR engine toward the parse that *includes* the optional expression
-// (this lets `Возврат Ждать F()` parse as `ReturnStatement(Return, AwaitExpr)`
-// rather than two consecutive statements).
-ReturnStatement[@dynamicPrecedence=1] { Return expression? }
+// Statements with optional trailing expression. `~retArg`/`~raiseArg` marks
+// both branches as intentionally ambiguous so Lezer's GLR can explore them;
+// `@dynamicPrecedence=1` biases the engine toward the parse that *includes*
+// the optional expression (e.g. `Возврат Ждать F()` parses as
+// `ReturnStatement(Return, AwaitExpr)` rather than two consecutive
+// statements `Return; AwaitStatement`).
+ReturnStatement[@dynamicPrecedence=1] {
+  Return ~retArg |
+  Return ~retArg expression
+}
+RaiseStatement[@dynamicPrecedence=1] {
+  Raise ~raiseArg |
+  Raise ~raiseArg expression
+}
 ContinueStatement { Continue }
 BreakStatement { Break }
-RaiseStatement[@dynamicPrecedence=1] { Raise expression? }
 ExecuteStatement { Execute expression }
 GotoStatement { Goto "~" Identifier }
 AddHandlerStatement { AddHandler expression "," expression }
@@ -239,10 +267,37 @@ access {
   IndexAccess
 }
 
-PropertyAccess { "." Identifier }
-CallAccess { "." Identifier callArgs }
+// After `.` BSL allows *any* identifier-shaped word — including ones that
+// are otherwise BSL keywords. The most common is `Запрос.Выполнить()` where
+// `Выполнить` would specialize to the `Execute` keyword globally; ANTLR
+// resolves this via a `DOT_MODE` lexer state where keywords are re-tagged
+// as identifiers. We can't do mode-shifting in Lezer's specializer, so the
+// parser rules below explicitly accept every BSL keyword term *or* a plain
+// Identifier in the dot position.
+PropertyAccess { "." dotIdentifier }
+CallAccess { "." dotIdentifier callArgs }
+
+dotIdentifier { Identifier | dotKeyword }
+
+dotKeyword {
+  Procedure | Function | EndProcedure | EndFunction |
+  Export | Val | Var |
+  If | Then | Elsif | Else | EndIf |
+  While | Do | EndDo |
+  For | To | Each | In |
+  Try | Except | EndTry |
+  Return | Continue | Break | Raise | Execute | Goto |
+  New | AddHandler | RemoveHandler |
+  Async | Await |
+  And | Or | Not |
+  True | False | Undefined | Null
+}
 IndexAccess { "[" expression "]" }
 
+// Argument list — comma-skipping (`Метод(a,,b)` / `Метод(,a)`) is not
+// supported. Removed the failed attempt to model `,` as a stand-alone item;
+// it fundamentally collides with `f(g(...))` inner-call parsing in LR(1).
+// See README → Limitations for context.
 callArgs { "(" callArgsList? ")" }
 callArgsList { callArg ("," callArg)* }
 callArg { expression }
@@ -272,7 +327,11 @@ Preprocessor {
   PreprocessorIf |
   PreprocessorElsif |
   PreprocessorElse |
-  PreprocessorEndIf
+  PreprocessorEndIf |
+  PreprocessorDelete |
+  PreprocessorEndDelete |
+  PreprocessorInsert |
+  PreprocessorEndInsert
 }
 
 Region { "#" PreprocRegion RegionName }
@@ -289,6 +348,16 @@ PreprocessorIf { "#" If preprocExpr Then }
 PreprocessorElsif { "#" Elsif preprocExpr Then }
 PreprocessorElse { "#" Else }
 PreprocessorEndIf { "#" EndIf }
+
+// Configuration-extension preprocessor markers. `#Удаление`/`#КонецУдаления`
+// brackets code that the *base* configuration has but that the extension
+// removes; `#Вставка`/`#КонецВставки` brackets code the extension *adds*.
+// For highlighting purposes both are simple bracket-style directive pairs;
+// the BSL between them stays in the regular token stream.
+PreprocessorDelete { "#" PreprocDelete }
+PreprocessorEndDelete { "#" PreprocEndDelete }
+PreprocessorInsert { "#" PreprocInsert }
+PreprocessorEndInsert { "#" PreprocEndInsert }
 
 preprocExpr {
   Not preprocExpr |
@@ -311,7 +380,12 @@ preprocBoolOp { Or | And }
   cmp @left,
   and @left,
   or @left,
-  preprocBool @left
+  preprocBool @left,
+  // `stmtSemi` biases shift-vs-reduce on the optional trailing `;` of
+  // BodyStatement: when the parser sees the `;` after a statement, it
+  // prefers shifting (consuming it into the current statement) over
+  // reducing without it (which would orphan the `;` as a bare statement).
+  stmtSemi @left
 }
 
 // ---- Skipping ----
@@ -321,7 +395,11 @@ preprocBoolOp { Or | And }
 // ---- Tokens ----
 
 @tokens {
-  space { @whitespace+ }
+  // Whitespace includes the UTF-8 BOM character (U+FEFF). Real 1C
+  // configuration modules are *always* saved with a leading BOM by the
+  // 1C:Enterprise designer; without this every config file would land an
+  // error token at offset 0 before the parser even sees the source.
+  space { (@whitespace | "﻿")+ }
 
   // BSLDescription doc-comments — `///` line-prefix marks a documentation
   // comment that bsl-language-server highlights with SemanticTokenModifiers
@@ -388,7 +466,8 @@ preprocBoolOp { Or | And }
   // omitted here because they're shared with BSL control flow and routed
   // through the same terms; styleTags discriminates via parent selectors
   // (`PreprocessorIf/If` etc.).
-  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative
+  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative,
+  PreprocDelete, PreprocEndDelete, PreprocInsert, PreprocEndInsert
 }
 
 @detectDelim

@@ -59,19 +59,59 @@ Module(
     Procedure,
     SubName(Identifier),
     "(", ")",
+    BodyStatement(Label("~", LabelName(Identifier), ":")),
     BodyStatement(
-      Label("~", LabelName(Identifier), ":"),
       IfStatement(
         If,
         BinaryExpr(Identifier, CmpOp, Number),
         Then,
         BodyStatement(GotoStatement(Goto, "~", Identifier), ";"),
         EndIf
-      )
+      ),
+      ";"
     ),
-    BodyStatement(";"),
     EndProcedure
   )
+)
+
+# Local Перем inside a procedure body (was not previously supported)
+
+Процедура Т()
+  Перем Локальная;
+  Перем Х, Y;
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Procedure,
+    SubName(Identifier),
+    "(", ")",
+    VarStatement(Var, VarDeclaration(Identifier), ";"),
+    VarStatement(Var, VarDeclaration(Identifier), ",", VarDeclaration(Identifier), ";"),
+    EndProcedure
+  )
+)
+
+# Configuration-extension preprocessor #Удаление / #Вставка
+
+#Удаление
+  УстаревшийМетод();
+#КонецУдаления
+#Вставка
+  НовыйМетод();
+#КонецВставки
+
+==>
+
+Module(
+  Preprocessor(PreprocessorDelete("#", PreprocDelete)),
+  BodyStatement(CallStatement(Identifier, "(", ")"), ";"),
+  Preprocessor(PreprocessorEndDelete("#", PreprocEndDelete)),
+  Preprocessor(PreprocessorInsert("#", PreprocInsert)),
+  BodyStatement(CallStatement(Identifier, "(", ")"), ";"),
+  Preprocessor(PreprocessorEndInsert("#", PreprocEndInsert))
 )
 
 # Ternary operator and New expression

@@ -243,6 +243,12 @@ export const bslLanguage = LRLanguage.define({
         LabelName: t.labelName,
         AnnotationParamName: t.local(t.variableName),
 
+        // After `.` a BSL keyword may be used as a method/property name
+        // (`Запрос.Выполнить()`, `Объект.Значение`, …). Re-tag every keyword
+        // term to propertyName when it sits inside an access node, overriding
+        // the default control-keyword colouring those terms get elsewhere.
+        "PropertyAccess/dotKeyword CallAccess/dotKeyword": t.propertyName,
+
         // ---- Annotations (compiler directives like &НаКлиенте) ----
         "Annotation/AnnotationName": t.annotation,
 
@@ -252,12 +258,13 @@ export const bslLanguage = LRLanguage.define({
         // region name → Variable (we already tag Identifier → variableName).
         "PreprocUse PreprocNative": t.namespace,
         "PreprocRegion PreprocEndRegion": t.namespace,
+        "PreprocDelete PreprocEndDelete PreprocInsert PreprocEndInsert": t.macroName,
         // Preprocessor #Если/.../КонецЕсли — shared BSL keyword terms,
         // discriminated as macros only when sitting inside a preproc directive.
         "PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or": t.macroName,
         ShebangLine: t.processingInstruction,
         "Region/RegionName": t.variableName,
-        "Region EndRegion PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocUseDirective PreprocNativeDirective Shebang": t.processingInstruction,
+        "Region EndRegion PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocUseDirective PreprocNativeDirective Shebang": t.processingInstruction,
 
         // ---- Punctuation and operators ----
         // Punctuation literals are tagged via their wrapping named nodes

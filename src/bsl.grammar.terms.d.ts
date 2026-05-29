@@ -50,3 +50,7 @@ export const PreprocRegion: number
 export const PreprocEndRegion: number
 export const PreprocUse: number
 export const PreprocNative: number
+export const PreprocDelete: number
+export const PreprocEndDelete: number
+export const PreprocInsert: number
+export const PreprocEndInsert: number

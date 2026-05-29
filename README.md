@@ -93,20 +93,29 @@ table above, replay the upstream diff against `src/bsl.grammar` and
 A handful of intentional simplifications, mostly to keep the LR grammar
 free of ambiguity:
 
-- **Trailing semicolons** after *flat* statements (`Возврат`, `Прервать`,
-  assignment, call) are required. ANTLR allows them to be optional; we force
-  them because the optional form clashes with valid statement starters like
-  `Ждать` or identifiers as the next statement. Block statements (`Если`,
-  `Пока`, `Для`, `Попытка`) still accept an optional trailing `;`.
 - **Context-sensitive preprocessor identifiers.** `#Если`/`#Иначе`/
   `#КонецЕсли`/`#Тогда`/`#И`/`#Или`/`#Не` reuse the corresponding BSL keyword
   terms — styleTags discriminates them via parent selectors. The remaining
   preprocessor-only words (`Область`, `КонецОбласти`, `Использовать`,
-  `native`) are specialized globally; if you use one as an ordinary
-  identifier outside `#` context, it will be tagged as a preprocessor
-  token. BSL convention does not collide with these names in practice.
-- **Comma-skipping in call arguments** (`Метод(a,,b)`) is not supported. All
-  arguments must be non-empty expressions.
+  `native`, `Удаление`/`КонецУдаления`, `Вставка`/`КонецВставки`) are
+  specialized globally; if you use one as an ordinary identifier outside
+  `#` context, it will be tagged as a preprocessor token. BSL convention
+  does not collide with these names in practice.
+- **Comma-skipping in call arguments** (`Метод(a,,b)` or `Метод(,a)`) is
+  not supported — modelling `,` as a stand-alone item conflicts with inner
+  `f(g(...))` parsing in LR(1) without a custom external tokenizer. All
+  arguments must be non-empty expressions. Affects roughly 1–2% of
+  real-world BSL.
+- **Multiline strings cannot contain embedded preprocessor directives.**
+  ANTLR's `multilineString : STRINGSTART (STRINGPART | BAR | preprocessor)*
+  STRINGTAIL` accepts `#Если` inside a `|`-continued string; we match the
+  entire literal as one token. Very rare in practice.
+
+Verified against ~100 real-world configuration files
+(`1c-syntax/bsl-language-server` and `1c-syntax/vsc-language-1c-bsl`
+fixtures): **85% clean parses, 0 hard failures**, the remaining ~15% are
+either intentional ParseError test cases, source-level typos, or hit one
+of the three limitations above.
 
 Out of scope (defer to other tools):
 

@@ -18,7 +18,8 @@ import {
   Async, Await,
   And, Or, Not,
   True, False, Undefined, Null,
-  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative
+  PreprocRegion, PreprocEndRegion, PreprocUse, PreprocNative,
+  PreprocDelete, PreprocEndDelete, PreprocInsert, PreprocEndInsert
 } from "./bsl.grammar.terms"
 
 // Map of lowercased keyword text → Lezer term ID. Both Russian and English
@@ -84,7 +85,12 @@ const PREPROC_KEYWORDS: Record<string, number> = {
   "область": PreprocRegion, "region": PreprocRegion,
   "конецобласти": PreprocEndRegion, "endregion": PreprocEndRegion,
   "использовать": PreprocUse, "use": PreprocUse,
-  "native": PreprocNative
+  "native": PreprocNative,
+  // Configuration-extension directives
+  "удаление": PreprocDelete, "delete": PreprocDelete,
+  "конецудаления": PreprocEndDelete, "enddelete": PreprocEndDelete,
+  "вставка": PreprocInsert, "insert": PreprocInsert,
+  "конецвставки": PreprocEndInsert, "endinsert": PreprocEndInsert
 }
 
 // Specializer invoked by Lezer for every Identifier token. Returns a term ID
