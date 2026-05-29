@@ -39,14 +39,14 @@ fragment {
   Punct
 }
 
-ParenGroup { "(" fragment* ")" }
+ParenGroup { LParen fragment* RParen }
 
-Parameter { "&" Identifier }
+Parameter { Ampersand Identifier }
 
-AddOp { "+" | "-" }
-MulOp { "*" | "/" }
-CmpOp { "=" | "<>" | "<" | "<=" | ">" | ">=" }
-Punct { "," | ";" | ":" | "." | "#" }
+AddOp { Plus | Minus }
+MulOp { Mul | Quotient }
+CmpOp { Assign | NotEqual | Less | LessOrEqual | Greater | GreaterOrEqual }
+Punct { Comma | Semicolon | Colon | Dot | Hash }
 
 // ---- Skipping ----
 
@@ -74,15 +74,32 @@ Punct { "," | ";" | ":" | "." | "#" }
     '"'
   }
 
-  // Punctuation
-  "(" ")" "," ":" ";" "." "#" "&"
-  "+" "-" "*" "/"
-  "=" "<>" "<=" ">=" "<" ">"
+  // Named punctuation and operators — same convention as bsl.grammar so
+  // styleTags can use identifier-shaped path selectors and we stay aligned
+  // with the upstream ANTLR token vocabulary.
+  LParen        { "(" }
+  RParen        { ")" }
+  Comma         { "," }
+  Colon         { ":" }
+  Semicolon     { ";" }
+  Dot           { "." }
+  Hash          { "#" }
+  Ampersand     { "&" }
+  Plus          { "+" }
+  Minus         { "-" }
+  Mul           { "*" }
+  Quotient      { "/" }
+  Assign        { "=" }
+  NotEqual      { "<>" }
+  LessOrEqual   { "<=" }
+  GreaterOrEqual { ">=" }
+  Less          { "<" }
+  Greater       { ">" }
 
-  @precedence { "<=", "<>", "<" }
-  @precedence { ">=", ">" }
-  @precedence { LineComment, "/" }
-  @precedence { Number, "." }
+  @precedence { LessOrEqual, NotEqual, Less }
+  @precedence { GreaterOrEqual, Greater }
+  @precedence { LineComment, Quotient }
+  @precedence { Number, Dot }
 }
 
 // ---- External specialization: case-insensitive keyword matching ----

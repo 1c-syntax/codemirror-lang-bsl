@@ -12,15 +12,15 @@ Module(
     Async,
     Function,
     SubName(Identifier),
-    "(", ")",
+    LParen, RParen,
     BodyStatement(
       Assignment(
-        Identifier, "=",
-        AwaitExpr(Await, Identifier, CallAccess(".", Identifier, "(", ")"))
+        Identifier, Assign,
+        AwaitExpr(Await, Identifier, CallAccess(Dot, Identifier, LParen, RParen))
       ),
-      ";"
+      Semicolon
     ),
-    BodyStatement(ReturnStatement(Return, Identifier), ";"),
+    BodyStatement(ReturnStatement(Return, Identifier), Semicolon),
     EndFunction
   )
 )
@@ -37,8 +37,8 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
-    BodyStatement(Assignment(Identifier, "=", Date), ";"),
+    LParen, RParen,
+    BodyStatement(Assignment(Identifier, Assign, Date), Semicolon),
     EndProcedure
   )
 )
@@ -58,17 +58,17 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
-    BodyStatement(Label("~", LabelName(Identifier), ":")),
+    LParen, RParen,
+    BodyStatement(Label(Tilda, LabelName(Identifier), Colon)),
     BodyStatement(
       IfStatement(
         If,
-        BinaryExpr(Identifier, CmpOp, Number),
+        BinaryExpr(Identifier, CmpOp(Assign), Number),
         Then,
-        BodyStatement(GotoStatement(Goto, "~", Identifier), ";"),
+        BodyStatement(GotoStatement(Goto, Tilda, Identifier), Semicolon),
         EndIf
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )
@@ -87,9 +87,9 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
-    VarStatement(Var, VarDeclaration(Identifier), ";"),
-    VarStatement(Var, VarDeclaration(Identifier), ",", VarDeclaration(Identifier), ";"),
+    LParen, RParen,
+    VarStatement(Var, VarDeclaration(Identifier), Semicolon),
+    VarStatement(Var, VarDeclaration(Identifier), Comma, VarDeclaration(Identifier), Semicolon),
     EndProcedure
   )
 )
@@ -106,12 +106,12 @@ Module(
 ==>
 
 Module(
-  Preprocessor(PreprocessorDelete("#", PreprocDelete)),
-  BodyStatement(CallStatement(Identifier, "(", ")"), ";"),
-  Preprocessor(PreprocessorEndDelete("#", PreprocEndDelete)),
-  Preprocessor(PreprocessorInsert("#", PreprocInsert)),
-  BodyStatement(CallStatement(Identifier, "(", ")"), ";"),
-  Preprocessor(PreprocessorEndInsert("#", PreprocEndInsert))
+  Preprocessor(PreprocessorDelete(Hash, PreprocDelete)),
+  BodyStatement(CallStatement(Identifier, LParen, RParen), Semicolon),
+  Preprocessor(PreprocessorEndDelete(Hash, PreprocEndDelete)),
+  Preprocessor(PreprocessorInsert(Hash, PreprocInsert)),
+  BodyStatement(CallStatement(Identifier, LParen, RParen), Semicolon),
+  Preprocessor(PreprocessorEndInsert(Hash, PreprocEndInsert))
 )
 
 # Ternary operator and New expression
@@ -127,25 +127,25 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
+    LParen, RParen,
     BodyStatement(
       Assignment(
-        Identifier, "=",
-        TernaryOp("?", "(",
-          BinaryExpr(Identifier, CmpOp, Number), ",",
-          String, ",",
+        Identifier, Assign,
+        TernaryOp(Question, LParen,
+          BinaryExpr(Identifier, CmpOp(Greater), Number), Comma,
+          String, Comma,
           String,
-          ")"
+          RParen
         )
       ),
-      ";"
+      Semicolon
     ),
     BodyStatement(
       Assignment(
-        Identifier, "=",
-        NewExpr(New, Identifier, "(", String, ",", String, ",", Number, ")")
+        Identifier, Assign,
+        NewExpr(New, Identifier, LParen, String, Comma, String, Comma, Number, RParen)
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )
@@ -164,24 +164,24 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
+    LParen, RParen,
     BodyStatement(
       AddHandlerStatement(
         AddHandler,
-        Identifier, PropertyAccess(".", Identifier),
-        ",",
+        Identifier, PropertyAccess(Dot, Identifier),
+        Comma,
         Identifier
       ),
-      ";"
+      Semicolon
     ),
     BodyStatement(
       RemoveHandlerStatement(
         RemoveHandler,
-        Identifier, PropertyAccess(".", Identifier),
-        ",",
+        Identifier, PropertyAccess(Dot, Identifier),
+        Comma,
         Identifier
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )
@@ -200,11 +200,11 @@ Module(
 ==>
 
 Module(
-  Preprocessor(PreprocessorIf("#", If, PreprocSymbol(Identifier), Then)),
-  ProcedureDecl(Procedure, SubName(Identifier), "(", ")", EndProcedure),
-  Preprocessor(PreprocessorElse("#", Else)),
-  ProcedureDecl(Procedure, SubName(Identifier), "(", ")", EndProcedure),
-  Preprocessor(PreprocessorEndIf("#", EndIf))
+  Preprocessor(PreprocessorIf(Hash, If, PreprocSymbol(Identifier), Then)),
+  ProcedureDecl(Procedure, SubName(Identifier), LParen, RParen, EndProcedure),
+  Preprocessor(PreprocessorElse(Hash, Else)),
+  ProcedureDecl(Procedure, SubName(Identifier), LParen, RParen, EndProcedure),
+  Preprocessor(PreprocessorEndIf(Hash, EndIf))
 )
 
 # DocComment lines as flat tree children
@@ -222,9 +222,9 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
+    LParen,
     Param(Identifier),
-    ")",
+    RParen,
     EndProcedure
   )
 )
@@ -243,8 +243,8 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
-    BodyStatement(Assignment(Identifier, "=", String), ";"),
+    LParen, RParen,
+    BodyStatement(Assignment(Identifier, Assign, String), Semicolon),
     EndProcedure
   )
 )
@@ -262,18 +262,18 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(", ")",
+    LParen, RParen,
     BodyStatement(
-      Assignment(Identifier, "=", NewExpr(New, Identifier)),
-      ";"
+      Assignment(Identifier, Assign, NewExpr(New, Identifier)),
+      Semicolon
     ),
     BodyStatement(
       Assignment(
-        Identifier, PropertyAccess(".", Identifier),
-        "=",
+        Identifier, PropertyAccess(Dot, Identifier),
+        Assign,
         String
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )

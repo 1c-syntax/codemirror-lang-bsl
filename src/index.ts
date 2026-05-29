@@ -119,11 +119,12 @@ export const sdblLanguage = sdblParser.configure({
       Number: t.number,
       StringLit: t.string,
       // Parameter references (&ИмяПараметра) — tagged as a typed local so
-      // they stand out from regular identifiers.
+      // they stand out from regular identifiers; the `&` punctuation gets
+      // the modifier tag so it renders together with the parameter name.
       "Parameter/Identifier": t.local(t.variableName),
-      "Parameter/&": t.modifier,
+      "Parameter/Ampersand": t.modifier,
       // Punctuation
-      "( )": t.paren,
+      "LParen RParen": t.paren,
       "AddOp MulOp": t.arithmeticOperator,
       CmpOp: t.compareOperator,
       Punct: t.punctuation,
@@ -251,13 +252,11 @@ export const bslLanguage = LRLanguage.define({
 
         // ---- Annotations (compiler directives like &НаКлиенте) ----
         // Every leaf token of an annotation gets `t.annotation` so the whole
-        // `&Имя` reads as one visual unit. The `AnnotationName/Identifier`
-        // selector is needed because @lezer/highlight resolves tags at the
-        // leaf level — a parent-only `AnnotationName: t.annotation` would
-        // lose against the global `Identifier: t.variableName`. The quoted
-        // `"&"` form is the only way to reference a non-identifier-shaped
-        // literal inside a path selector.
-        'Annotation/AnnotationName AnnotationName/Identifier Annotation/"&"': t.annotation,
+        // `&Имя` reads as one visual unit. AnnotationName/Identifier is
+        // needed because @lezer/highlight resolves at the leaf level —
+        // `AnnotationName: t.annotation` alone would lose against the global
+        // `Identifier: t.variableName`.
+        "Annotation/AnnotationName AnnotationName/Identifier Annotation/Ampersand": t.annotation,
 
         // ---- Preprocessor ----
         // Per bsl-language-server PreprocessorSemanticTokensSupplier:
@@ -274,37 +273,38 @@ export const bslLanguage = LRLanguage.define({
         // at the leaf — parent-only tags lose against any leaf rule.
 
         // Namespace bucket — regions and use directive.
-        'Region EndRegion PreprocUseDirective Region/"#" EndRegion/"#" PreprocUseDirective/"#" PreprocRegion PreprocEndRegion PreprocUse': t.namespace,
+        "Region EndRegion PreprocUseDirective Region/Hash EndRegion/Hash PreprocUseDirective/Hash PreprocRegion PreprocEndRegion PreprocUse": t.namespace,
 
         // Macro bucket — conditional directives, native, configuration-
         // extension markers. The `Preprocessor*/If` etc. selectors retag
         // BSL control-flow terms that share their surface form with
         // preprocessor keywords.
-        'PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocNativeDirective PreprocessorIf/"#" PreprocessorElsif/"#" PreprocessorElse/"#" PreprocessorEndIf/"#" PreprocessorDelete/"#" PreprocessorEndDelete/"#" PreprocessorInsert/"#" PreprocessorEndInsert/"#" PreprocNativeDirective/"#" PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or PreprocDelete PreprocEndDelete PreprocInsert PreprocEndInsert PreprocNative': t.macroName,
+        "PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocNativeDirective PreprocessorIf/Hash PreprocessorElsif/Hash PreprocessorElse/Hash PreprocessorEndIf/Hash PreprocessorDelete/Hash PreprocessorEndDelete/Hash PreprocessorInsert/Hash PreprocessorEndInsert/Hash PreprocNativeDirective/Hash PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or PreprocDelete PreprocEndDelete PreprocInsert PreprocEndInsert PreprocNative": t.macroName,
 
         ShebangLine: t.processingInstruction,
         "Region/RegionName": t.variableName,
 
         // ---- Punctuation and operators ----
-        // Punctuation literals are tagged via their wrapping named nodes
-        // (MulOp, AddOp, etc.) — the styleTags selector mini-language treats
-        // a bare `*` as a wildcard, so we cannot list multiplication directly.
+        // Every lexeme is named (Ampersand, Hash, Dot, …) so styleTags can
+        // reference them by identifier — no quoted-literal syntax needed.
+        // Leaf tokens get their tag directly; the *Op wrappers also get a
+        // tag for downstream consumers walking the tree, but the leaves win
+        // for highlighting.
         "OrOp AndOp": t.logicOperator,
-        CmpOp: t.compareOperator,
-        AddOp: t.arithmeticOperator,
-        MulOp: t.arithmeticOperator,
+        "CmpOp Assign NotEqual Less LessOrEqual Greater GreaterOrEqual": t.compareOperator,
+        "AddOp Plus Minus": t.arithmeticOperator,
+        "MulOp Mul Quotient Modulo": t.arithmeticOperator,
         UnaryOp: t.operator,
-        "( )": t.paren,
-        "[ ]": t.squareBracket,
-        "{ }": t.brace,
-        ", ;": t.separator,
-        ":": t.punctuation,
-        ".": t.derefOperator,
-        "?": t.controlOperator,
+        "LParen RParen": t.paren,
+        "LBrack RBrack": t.squareBracket,
+        "Comma Semicolon": t.separator,
+        Colon: t.punctuation,
+        Dot: t.derefOperator,
+        Question: t.controlOperator,
         // Default colour for `&`/`~`/`#` outside their usual contexts —
-        // contextual selectors above (Annotation/&, Preprocessor/#, etc.)
-        // take precedence when the token sits inside the matching parent.
-        "& ~ #": t.punctuation,
+        // contextual selectors above (Annotation/Ampersand, *Preprocessor/Hash,
+        // etc.) take precedence when the token sits inside the matching parent.
+        "Ampersand Tilda Hash": t.punctuation,
 
         // ---- Comments ----
         LineComment: t.lineComment,

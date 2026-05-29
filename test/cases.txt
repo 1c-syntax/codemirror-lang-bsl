@@ -23,8 +23,8 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    ")",
+    LParen,
+    RParen,
     EndProcedure
   )
 )
@@ -40,8 +40,8 @@ Module(
   FunctionDecl(
     Function,
     SubName(Identifier),
-    "(",
-    ")",
+    LParen,
+    RParen,
     Export,
     EndFunction
   )
@@ -58,11 +58,11 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    Param(Val, Identifier, "=", DefaultValue(String)),
-    ",",
+    LParen,
+    Param(Val, Identifier, Assign, DefaultValue(String)),
+    Comma,
     Param(Identifier),
-    ")",
+    RParen,
     EndProcedure
   )
 )
@@ -77,9 +77,9 @@ Module(
   VarStatement(
     Var,
     VarDeclaration(Identifier),
-    ",",
+    Comma,
     VarDeclaration(Identifier, Export),
-    ";"
+    Semicolon
   )
 )
 
@@ -101,27 +101,27 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    ")",
+    LParen,
+    RParen,
     BodyStatement(
       IfStatement(
         If,
         Identifier,
         Then,
-        BodyStatement(Assignment(Identifier, "=", Number), ";"),
+        BodyStatement(Assignment(Identifier, Assign, Number), Semicolon),
         ElsifBranch(
           Elsif,
           Identifier,
           Then,
-          BodyStatement(Assignment(Identifier, "=", Number), ";")
+          BodyStatement(Assignment(Identifier, Assign, Number), Semicolon)
         ),
         ElseBranch(
           Else,
-          BodyStatement(Assignment(Identifier, "=", Number), ";")
+          BodyStatement(Assignment(Identifier, Assign, Number), Semicolon)
         ),
         EndIf
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )
@@ -139,9 +139,9 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    ")",
-    BodyStatement(Assignment(Identifier, "=", String), ";"),
+    LParen,
+    RParen,
+    BodyStatement(Assignment(Identifier, Assign, String), Semicolon),
     EndProcedure
   )
 )
@@ -156,12 +156,12 @@ Module(
 
 Module(
   ProcedureDecl(
-    Annotation("&", AnnotationName(Identifier)),
+    Annotation(Ampersand, AnnotationName(Identifier)),
     Procedure,
     SubName(Identifier),
-    "(",
+    LParen,
     Param(Identifier),
-    ")",
+    RParen,
     EndProcedure
   )
 )
@@ -178,15 +178,15 @@ Module(
 ==>
 
 Module(
-  Preprocessor(Region("#", PreprocRegion, RegionName(Identifier))),
+  Preprocessor(Region(Hash, PreprocRegion, RegionName(Identifier))),
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    ")",
+    LParen,
+    RParen,
     EndProcedure
   ),
-  Preprocessor(EndRegion("#", PreprocEndRegion))
+  Preprocessor(EndRegion(Hash, PreprocEndRegion))
 )
 
 # For-each loop with method call
@@ -203,8 +203,8 @@ Module(
   ProcedureDecl(
     Procedure,
     SubName(Identifier),
-    "(",
-    ")",
+    LParen,
+    RParen,
     BodyStatement(
       ForEachStatement(
         For,
@@ -216,16 +216,16 @@ Module(
         BodyStatement(
           CallStatement(
             Identifier,
-            "(",
+            LParen,
             Identifier,
-            PropertyAccess(".", Identifier),
-            ")"
+            PropertyAccess(Dot, Identifier),
+            RParen
           ),
-          ";"
+          Semicolon
         ),
         EndDo
       ),
-      ";"
+      Semicolon
     ),
     EndProcedure
   )

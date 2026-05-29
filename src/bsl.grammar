@@ -32,24 +32,24 @@ ModuleAnnotation {
   PreprocNativeDirective
 }
 
-PreprocUseDirective { "#" PreprocUse useTarget }
+PreprocUseDirective { Hash PreprocUse useTarget }
 useTarget { String | Identifier }
-PreprocNativeDirective { "#" PreprocNative }
+PreprocNativeDirective { Hash PreprocNative }
 
 // ---- Compiler directives & annotations ----
 
 Annotation {
-  "&" AnnotationName AnnotationParams?
+  Ampersand AnnotationName AnnotationParams?
 }
 
 AnnotationName { Identifier }
 
 AnnotationParams {
-  "(" (AnnotationParam ("," AnnotationParam)*)? ")"
+  LParen (AnnotationParam (Comma AnnotationParam)*)? RParen
 }
 
 AnnotationParam {
-  AnnotationParamName ("=" annotationValue)? |
+  AnnotationParamName (Assign annotationValue)? |
   annotationValue
 }
 
@@ -71,10 +71,10 @@ decoration { Annotation }
 // (LR(1) cannot pick between reducing here and shifting `;` as the next stmt).
 VarStatement {
   decoration*
-  Var varDeclList ";"
+  Var varDeclList Semicolon
 }
 
-varDeclList { VarDeclaration ("," VarDeclaration)* }
+varDeclList { VarDeclaration (Comma VarDeclaration)* }
 
 VarDeclaration { Identifier Export? }
 
@@ -83,7 +83,7 @@ VarDeclaration { Identifier Export? }
 ProcedureDecl {
   decoration*
   Async?
-  Procedure SubName "(" paramList? ")" Export?
+  Procedure SubName LParen paramList? RParen Export?
   body
   EndProcedure
 }
@@ -91,19 +91,19 @@ ProcedureDecl {
 FunctionDecl {
   decoration*
   Async?
-  Function SubName "(" paramList? ")" Export?
+  Function SubName LParen paramList? RParen Export?
   body
   EndFunction
 }
 
 SubName { Identifier }
 
-paramList { Param ("," Param)* }
+paramList { Param (Comma Param)* }
 
 Param {
   Annotation*
   Val?
-  Identifier ("=" DefaultValue)?
+  Identifier (Assign DefaultValue)?
 }
 
 DefaultValue { unaryConstValue }
@@ -133,15 +133,15 @@ body { (BodyStatement | Preprocessor | VarStatement)* }
 // that lets Label sit on its own *or* prefix the next statement.
 BodyStatement {
   Label ~labelOpt flatStatement |
-  Label ~labelOpt flatStatement !stmtSemi ";" |
+  Label ~labelOpt flatStatement !stmtSemi Semicolon |
   Label ~labelOpt blockStatement ~blockSemi |
-  Label ~labelOpt blockStatement ~blockSemi !stmtSemi ";" |
+  Label ~labelOpt blockStatement ~blockSemi !stmtSemi Semicolon |
   Label ~labelOpt |
   flatStatement |
-  flatStatement !stmtSemi ";" |
+  flatStatement !stmtSemi Semicolon |
   blockStatement ~blockSemi |
-  blockStatement ~blockSemi !stmtSemi ";" |
-  ";"
+  blockStatement ~blockSemi !stmtSemi Semicolon |
+  Semicolon
 }
 
 flatStatement {
@@ -166,10 +166,10 @@ blockStatement {
   TryStatement
 }
 
-Label { "~" LabelName ":" }
+Label { Tilda LabelName Colon }
 LabelName { Identifier }
 
-Assignment { lvalue "=" expression }
+Assignment { lvalue Assign expression }
 
 CallStatement { reference }
 
@@ -185,7 +185,7 @@ ElseBranch { Else body }
 WhileStatement { While expression Do body EndDo }
 
 ForStatement {
-  For Identifier "=" expression To expression Do body EndDo
+  For Identifier Assign expression To expression Do body EndDo
 }
 
 ForEachStatement {
@@ -211,9 +211,9 @@ RaiseStatement[@dynamicPrecedence=1] {
 ContinueStatement { Continue }
 BreakStatement { Break }
 ExecuteStatement { Execute expression }
-GotoStatement { Goto "~" Identifier }
-AddHandlerStatement { AddHandler expression "," expression }
-RemoveHandlerStatement { RemoveHandler expression "," expression }
+GotoStatement { Goto Tilda Identifier }
+AddHandlerStatement { AddHandler expression Comma expression }
+RemoveHandlerStatement { RemoveHandler expression Comma expression }
 AwaitStatement { Await expression }
 
 // ---- Expressions ----
@@ -239,10 +239,10 @@ UnaryExpr { !unary UnaryOp expression }
 
 OrOp  { Or }
 AndOp { And }
-CmpOp { "=" | "<>" | "<" | "<=" | ">" | ">=" }
-AddOp { "+" | "-" }
-MulOp { "*" | "/" | "%" }
-UnaryOp { "+" | "-" | Not }
+CmpOp { Assign | NotEqual | Less | LessOrEqual | Greater | GreaterOrEqual }
+AddOp { Plus | Minus }
+MulOp { Mul | Quotient | Modulo }
+UnaryOp { Plus | Minus | Not }
 
 primary {
   constValue |
@@ -253,7 +253,7 @@ primary {
   reference
 }
 
-ParenExpr { "(" expression ")" accessChain }
+ParenExpr { LParen expression RParen accessChain }
 
 reference { refHead accessChain }
 
@@ -274,8 +274,8 @@ access {
 // as identifiers. We can't do mode-shifting in Lezer's specializer, so the
 // parser rules below explicitly accept every BSL keyword term *or* a plain
 // Identifier in the dot position.
-PropertyAccess { "." dotIdentifier }
-CallAccess { "." dotIdentifier callArgs }
+PropertyAccess { Dot dotIdentifier }
+CallAccess { Dot dotIdentifier callArgs }
 
 dotIdentifier { Identifier | dotKeyword }
 
@@ -292,17 +292,17 @@ dotKeyword {
   And | Or | Not |
   True | False | Undefined | Null
 }
-IndexAccess { "[" expression "]" }
+IndexAccess { LBrack expression RBrack }
 
 // Argument list — comma-skipping (`Метод(a,,b)` / `Метод(,a)`) is not
 // supported. Removed the failed attempt to model `,` as a stand-alone item;
 // it fundamentally collides with `f(g(...))` inner-call parsing in LR(1).
 // See README → Limitations for context.
-callArgs { "(" callArgsList? ")" }
-callArgsList { callArg ("," callArg)* }
+callArgs { LParen callArgsList? RParen }
+callArgsList { callArg (Comma callArg)* }
 callArg { expression }
 
-TernaryOp { "?" "(" expression "," expression "," expression ")" }
+TernaryOp { Question LParen expression Comma expression Comma expression RParen }
 NewExpr { New (Identifier callArgs? | callArgs) }
 AwaitExpr { Await expression }
 
@@ -334,8 +334,8 @@ Preprocessor {
   PreprocessorEndInsert
 }
 
-Region { "#" PreprocRegion RegionName }
-EndRegion { "#" PreprocEndRegion }
+Region { Hash PreprocRegion RegionName }
+EndRegion { Hash PreprocEndRegion }
 RegionName { Identifier }
 
 // Preprocessor `#Если/#ИначеЕсли/#Иначе/#КонецЕсли/#Тогда` and their logical
@@ -344,24 +344,24 @@ RegionName { Identifier }
 // cannot do natively against the existing identifier specialize hook), we
 // reuse the BSL terms here and let styleTags discriminate via parent
 // selectors like `"PreprocessorIf/If": t.macroName`.
-PreprocessorIf { "#" If preprocExpr Then }
-PreprocessorElsif { "#" Elsif preprocExpr Then }
-PreprocessorElse { "#" Else }
-PreprocessorEndIf { "#" EndIf }
+PreprocessorIf { Hash If preprocExpr Then }
+PreprocessorElsif { Hash Elsif preprocExpr Then }
+PreprocessorElse { Hash Else }
+PreprocessorEndIf { Hash EndIf }
 
 // Configuration-extension preprocessor markers. `#Удаление`/`#КонецУдаления`
 // brackets code that the *base* configuration has but that the extension
 // removes; `#Вставка`/`#КонецВставки` brackets code the extension *adds*.
 // For highlighting purposes both are simple bracket-style directive pairs;
 // the BSL between them stays in the regular token stream.
-PreprocessorDelete { "#" PreprocDelete }
-PreprocessorEndDelete { "#" PreprocEndDelete }
-PreprocessorInsert { "#" PreprocInsert }
-PreprocessorEndInsert { "#" PreprocEndInsert }
+PreprocessorDelete { Hash PreprocDelete }
+PreprocessorEndDelete { Hash PreprocEndDelete }
+PreprocessorInsert { Hash PreprocInsert }
+PreprocessorEndInsert { Hash PreprocEndInsert }
 
 preprocExpr {
   Not preprocExpr |
-  "(" preprocExpr ")" |
+  LParen preprocExpr RParen |
   preprocExpr !preprocBool preprocBoolOp preprocExpr |
   PreprocSymbol
 }
@@ -431,18 +431,41 @@ preprocBoolOp { Or | And }
   // Shebang line — matched as a single token so its content is not parsed.
   ShebangLine { "#!" ![\n]* }
 
-  // Punctuation
-  "(" ")" "[" "]" "{" "}"
-  "," ":" ";" "."
-  "+" "-" "*" "/" "%"
-  "=" "<>" "<=" ">=" "<" ">"
-  "?" "&" "~" "#"
+  // Named punctuation and operator tokens. Naming each lexeme mirrors the
+  // upstream ANTLR convention from `1c-syntax/bsl-parser` (AMPERSAND, HASH,
+  // DOT, …) and — more pragmatically — sidesteps @lezer/highlight's
+  // selector mini-language, which only accepts identifier-shaped names in
+  // path positions. With named tokens the styleTags selectors can read
+  // `Annotation/Ampersand` instead of the awkward quoted `Annotation/"&"`.
+  LParen        { "(" }
+  RParen        { ")" }
+  LBrack        { "[" }
+  RBrack        { "]" }
+  Comma         { "," }
+  Colon         { ":" }
+  Semicolon     { ";" }
+  Dot           { "." }
+  Plus          { "+" }
+  Minus         { "-" }
+  Mul           { "*" }
+  Quotient      { "/" }
+  Modulo        { "%" }
+  Assign        { "=" }
+  NotEqual      { "<>" }
+  LessOrEqual   { "<=" }
+  GreaterOrEqual { ">=" }
+  Less          { "<" }
+  Greater       { ">" }
+  Question      { "?" }
+  Ampersand     { "&" }
+  Tilda         { "~" }
+  Hash          { "#" }
 
-  @precedence { "<=", "<>", "<" }
-  @precedence { ">=", ">" }
-  @precedence { DocComment, LineComment, "/" }
-  @precedence { Number, "." }
-  @precedence { ShebangLine, "#" }
+  @precedence { LessOrEqual, NotEqual, Less }
+  @precedence { GreaterOrEqual, Greater }
+  @precedence { DocComment, LineComment, Quotient }
+  @precedence { Number, Dot }
+  @precedence { ShebangLine, Hash }
 }
 
 // ---- External specialization: case-insensitive keyword matching ----
