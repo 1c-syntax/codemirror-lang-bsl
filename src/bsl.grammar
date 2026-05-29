@@ -96,7 +96,12 @@ FunctionDecl {
   EndFunction
 }
 
-SubName { Identifier }
+// Procedure/function names — same problem as PropertyAccess/CallAccess: a
+// method named after a BSL keyword (`Процедура Выполнить()` is a real,
+// observed pattern) globally specializes to the keyword term and SubName
+// would reject it. dotIdentifier already covers Identifier OR any BSL
+// keyword, so we reuse it here.
+SubName { dotIdentifier }
 
 paramList { Param (Comma Param)* }
 
@@ -310,10 +315,15 @@ lvalue { refHead accessChain }
 
 constValue {
   Number |
-  String |
+  String+ |
   Date |
   True | False | Undefined | Null
 }
+
+// ANTLR allows `string : (STRING | multilineString)+` — adjacent string
+// literals are implicitly concatenated. Real codebases use this to break a
+// long query across several `"…"` segments without writing `+` between
+// them; without `String+` we error out at the second String token.
 
 unaryConstValue {
   UnaryOp? constValue
