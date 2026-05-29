@@ -7,10 +7,10 @@
 // structure inline with the surrounding BSL tree.
 
 import {EditorView, basicSetup} from "codemirror"
-import {EditorState, StateField, type Extension} from "@codemirror/state"
+import {EditorState, type Extension} from "@codemirror/state"
 import {syntaxTree} from "@codemirror/language"
 import {oneDark} from "@codemirror/theme-one-dark"
-import {Tree, NodeProp, type Tree as TreeT, type TreeCursor} from "@lezer/common"
+import {NodeProp, type Tree as TreeT, type TreeCursor} from "@lezer/common"
 import {bsl} from "../src/index"
 
 // ---- Samples ---------------------------------------------------------------
@@ -235,15 +235,6 @@ function renderTree(tree: TreeT, doc: string): string {
   return out.join("")
 }
 
-let suppressAstUpdate = false
-const astUpdateField = StateField.define<number>({
-  create() { return 0 },
-  update(value, tx) {
-    if (suppressAstUpdate) return value
-    if (tx.docChanged || tx.selection) return value + 1
-    return value
-  }
-})
 
 const astUpdater = EditorView.updateListener.of(update => {
   if (!update.docChanged && !update.selectionSet) return
@@ -264,7 +255,7 @@ function commonExtensions(): Extension[] {
 }
 
 const initial = SAMPLES.find(s => s.id === currentSampleId) ?? SAMPLES[0]
-let view = new EditorView({
+const view = new EditorView({
   state: EditorState.create({
     doc: initial.doc,
     extensions: commonExtensions()

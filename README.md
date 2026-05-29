@@ -135,7 +135,9 @@ deployed automatically by `.github/workflows/pages.yml` on every push to
 
 ```bash
 npm install
+npm run lint          # ESLint (flat config) on src/, examples/, test/
 npm run build         # main library → dist/
+npm test              # mocha against test/cases.txt and overlay tests
 npm run build:demo    # static demo → docs/{index.html,bundle.js}
 npm run build:docs    # TypeDoc API reference → docs/api/
 npm run build:site    # demo + docs (CI uses this for gh-pages)

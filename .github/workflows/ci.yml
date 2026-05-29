@@ -7,6 +7,19 @@ on:
     branches: [main]
 
 jobs:
+  # Lint runs on a single Node version — output is identical across versions
+  # and there's no point burning a matrix slot.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -17,6 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm install
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - run: npm test
