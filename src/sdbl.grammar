@@ -33,6 +33,7 @@ fragment {
   Number |
   StringLit |
   ParenGroup |
+  BraceGroup |
   AddOp |
   MulOp |
   CmpOp |
@@ -40,6 +41,13 @@ fragment {
 }
 
 ParenGroup { LParen fragment* RParen }
+
+// `{...}` blocks in SDBL carry data-composition-system parameters that the
+// 1C query engine consumes out-of-band; ANTLR routes their contents to a
+// hidden channel. For highlighting purposes we let them sit as a nested
+// group so the surrounding query keeps parsing cleanly and styleTags can
+// pick the whole group out as configuration metadata.
+BraceGroup { LBrace fragment* RBrace }
 
 Parameter { Ampersand Identifier }
 
@@ -79,6 +87,8 @@ Punct { Comma | Semicolon | Colon | Dot | Hash }
   // with the upstream ANTLR token vocabulary.
   LParen        { "(" }
   RParen        { ")" }
+  LBrace        { "{" }
+  RBrace        { "}" }
   Comma         { "," }
   Colon         { ":" }
   Semicolon     { ";" }

@@ -26,6 +26,18 @@ describe("SDBL parser standalone", () => {
     const en = sdblLanguage.parse("SELECT TOP 10 FROM Справочник.Товары").toString()
     assert.equal(ru, en)
   })
+
+  it("parses `{...}` configuration blocks as a BraceGroup", () => {
+    // 1C data-composition-system queries embed `{...}` blocks that the query
+    // engine consumes out-of-band; we don't need to enforce their structure
+    // but the parser must accept them without error tokens.
+    const repr = sdblLanguage.parse(
+      "ВЫБРАТЬ {Поле1, Поле2} ИЗ Справочник.Контрагенты"
+    ).toString()
+    assert.match(repr, /BraceGroup\(LBrace[^)]*RBrace\)/)
+    // No error markers anywhere in the tree.
+    assert.doesNotMatch(repr, /⚠/)
+  })
 })
 
 describe("SDBL embedded inside BSL string literal via parseMixed", () => {

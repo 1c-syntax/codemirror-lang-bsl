@@ -125,6 +125,10 @@ export const sdblLanguage = sdblParser.configure({
       "Parameter/Ampersand": t.modifier,
       // Punctuation
       "LParen RParen": t.paren,
+      // `{...}` configuration blocks — tag the whole group as t.meta so a
+      // theme can fade them; the braces themselves get the brace tag.
+      "LBrace RBrace": t.brace,
+      BraceGroup: t.meta,
       "AddOp MulOp": t.arithmeticOperator,
       CmpOp: t.compareOperator,
       Punct: t.punctuation,
