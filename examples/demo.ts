@@ -7,8 +7,10 @@
 // structure inline with the surrounding BSL tree.
 
 import {EditorView, basicSetup} from "codemirror"
+import {keymap} from "@codemirror/view"
 import {EditorState, type Extension} from "@codemirror/state"
-import {syntaxTree} from "@codemirror/language"
+import {syntaxTree, indentUnit} from "@codemirror/language"
+import {indentWithTab} from "@codemirror/commands"
 import {oneDark} from "@codemirror/theme-one-dark"
 import {NodeProp, type Tree as TreeT, type TreeCursor} from "@lezer/common"
 import {bsl} from "../src/index"
@@ -268,6 +270,13 @@ function commonExtensions(): Extension[] {
     basicSetup,
     bsl(),
     astUpdater,
+    // Indentation: real tab character, displayed at 4 columns. `indentWithTab`
+    // binds the Tab key to insert/dedent rather than focus-shift away from
+    // the editor, which is the usual surprise when CM6 is dropped onto a
+    // page without it.
+    indentUnit.of("\t"),
+    EditorState.tabSize.of(4),
+    keymap.of([indentWithTab]),
     ...(dark ? [oneDark] : [])
   ]
 }
