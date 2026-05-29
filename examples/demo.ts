@@ -249,7 +249,6 @@ function commonExtensions(): Extension[] {
     basicSetup,
     bsl(),
     astUpdater,
-    astUpdateField,
     ...(dark ? [oneDark] : [])
   ]
 }
