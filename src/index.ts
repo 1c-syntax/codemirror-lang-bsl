@@ -250,28 +250,40 @@ export const bslLanguage = LRLanguage.define({
         "PropertyAccess/dotKeyword CallAccess/dotKeyword": t.propertyName,
 
         // ---- Annotations (compiler directives like &НаКлиенте) ----
-        // The `&` punctuation is tagged together with the annotation name so
-        // theming treats `&НаКлиенте` as one visual unit instead of leaving
-        // the `&` painted as ordinary punctuation.
-        "Annotation/AnnotationName Annotation/&": t.annotation,
+        // Every leaf token of an annotation gets `t.annotation` so the whole
+        // `&Имя` reads as one visual unit. The `AnnotationName/Identifier`
+        // selector is needed because @lezer/highlight resolves tags at the
+        // leaf level — a parent-only `AnnotationName: t.annotation` would
+        // lose against the global `Identifier: t.variableName`. The quoted
+        // `"&"` form is the only way to reference a non-identifier-shaped
+        // literal inside a path selector.
+        'Annotation/AnnotationName AnnotationName/Identifier Annotation/"&"': t.annotation,
 
         // ---- Preprocessor ----
-        // bsl-language-server: #Использовать and #Область → Namespace,
-        // other directives (#Если/#КонецЕсли/...) → Macro,
-        // region name → Variable (we already tag Identifier → variableName).
-        "PreprocUse PreprocNative": t.namespace,
-        "PreprocRegion PreprocEndRegion": t.namespace,
-        "PreprocDelete PreprocEndDelete PreprocInsert PreprocEndInsert": t.macroName,
-        // Preprocessor #Если/.../КонецЕсли — shared BSL keyword terms,
-        // discriminated as macros only when sitting inside a preproc directive.
-        "PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or": t.macroName,
-        // `#` punctuation in every preprocessor variant is re-tagged as
-        // processingInstruction so it sits in the same colour bucket as the
-        // surrounding directive instead of being left as bare punctuation.
-        "PreprocessorIf/# PreprocessorElsif/# PreprocessorElse/# PreprocessorEndIf/# Region/# EndRegion/# PreprocessorDelete/# PreprocessorEndDelete/# PreprocessorInsert/# PreprocessorEndInsert/# PreprocUseDirective/# PreprocNativeDirective/#": t.processingInstruction,
+        // Per bsl-language-server PreprocessorSemanticTokensSupplier:
+        //   • #Использовать and #Область/#КонецОбласти → Namespace
+        //   • #Если/#ИначеЕсли/#Иначе/#КонецЕсли, #native,
+        //     #Удаление/#Вставка → Macro
+        //   • Region name → Variable (kept as variableName from the global
+        //     Identifier rule)
+        //
+        // For every directive variant we tag the parent wrapper, the `#`
+        // punctuation, and the directive keyword *all* with the same tag so
+        // each directive renders as a single visual block. The leaf selectors
+        // (PreprocRegion etc.) are needed because @lezer/highlight resolves
+        // at the leaf — parent-only tags lose against any leaf rule.
+
+        // Namespace bucket — regions and use directive.
+        'Region EndRegion PreprocUseDirective Region/"#" EndRegion/"#" PreprocUseDirective/"#" PreprocRegion PreprocEndRegion PreprocUse': t.namespace,
+
+        // Macro bucket — conditional directives, native, configuration-
+        // extension markers. The `Preprocessor*/If` etc. selectors retag
+        // BSL control-flow terms that share their surface form with
+        // preprocessor keywords.
+        'PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocNativeDirective PreprocessorIf/"#" PreprocessorElsif/"#" PreprocessorElse/"#" PreprocessorEndIf/"#" PreprocessorDelete/"#" PreprocessorEndDelete/"#" PreprocessorInsert/"#" PreprocessorEndInsert/"#" PreprocNativeDirective/"#" PreprocessorIf/If PreprocessorIf/Then PreprocessorElsif/Elsif PreprocessorElsif/Then PreprocessorElse/Else PreprocessorEndIf/EndIf PreprocessorIf/Not PreprocessorElsif/Not PreprocessorIf/And PreprocessorElsif/And PreprocessorIf/Or PreprocessorElsif/Or PreprocDelete PreprocEndDelete PreprocInsert PreprocEndInsert PreprocNative': t.macroName,
+
         ShebangLine: t.processingInstruction,
         "Region/RegionName": t.variableName,
-        "Region EndRegion PreprocessorIf PreprocessorElsif PreprocessorElse PreprocessorEndIf PreprocessorDelete PreprocessorEndDelete PreprocessorInsert PreprocessorEndInsert PreprocUseDirective PreprocNativeDirective Shebang": t.processingInstruction,
 
         // ---- Punctuation and operators ----
         // Punctuation literals are tagged via their wrapping named nodes
