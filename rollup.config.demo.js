@@ -35,7 +35,11 @@ export default {
     resolve({browser: true}),
     commonjs(),
     typescript({
-      tsconfig: "./tsconfig.demo.json"
+      tsconfig: "./tsconfig.demo.json",
+      // Without this the plugin downgrades type errors to warnings and still
+      // emits — that's how the previous `astUpdateField is not defined` bug
+      // reached production. `noEmitOnError` makes the build fail loudly.
+      noEmitOnError: true
     }),
     terser({
       format: {comments: false},
