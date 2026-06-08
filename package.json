@@ -61,7 +61,7 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.1.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.2",
     "codemirror": "^6.0.2",
     "eslint": "^9.39.4",
     "globals": "^17.6.0",
