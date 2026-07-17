@@ -230,3 +230,36 @@ Module(
     EndProcedure
   )
 )
+
+# Annotation as annotation parameter value (nested annotation)
+
+&Пластилин(&Деталька("ИмяАппендера"))
+Процедура Аппендер()
+КонецПроцедуры
+
+==>
+
+Module(
+  ProcedureDecl(
+    Annotation(
+      Ampersand,
+      AnnotationName(Identifier),
+      AnnotationParams(
+        LParen,
+        AnnotationParam(
+          Annotation(
+            Ampersand,
+            AnnotationName(Identifier),
+            AnnotationParams(LParen, AnnotationParam(String), RParen)
+          )
+        ),
+        RParen
+      )
+    ),
+    Procedure,
+    SubName(Identifier),
+    LParen,
+    RParen,
+    EndProcedure
+  )
+)
