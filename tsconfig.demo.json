@@ -5,6 +5,7 @@
     "module": "es2020",
     "newLine": "lf",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "lib": ["es2020", "dom"]
   },
   "include": ["examples/demo.ts", "src/*.ts"]
