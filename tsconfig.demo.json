@@ -4,8 +4,7 @@
     "target": "es2020",
     "module": "es2020",
     "newLine": "lf",
-    "moduleResolution": "node",
-    "ignoreDeprecations": "6.0",
+    "moduleResolution": "bundler",
     "lib": ["es2020", "dom"]
   },
   "include": ["examples/demo.ts", "src/*.ts"]
