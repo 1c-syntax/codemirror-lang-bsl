@@ -30,7 +30,7 @@ jobs:
       # build:site = build:demo + build:docs (TypeDoc).
       # Demo lands at docs/{index.html,bundle.js}; API reference at docs/api/.
       - run: npm run build:site
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
