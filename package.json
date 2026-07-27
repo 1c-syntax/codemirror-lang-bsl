@@ -63,7 +63,7 @@
     "@rollup/plugin-typescript": "^12.1.0",
     "@types/node": "^26.1.1",
     "codemirror": "^6.0.2",
-    "eslint": "^10.7.0",
+    "eslint": "^10.8.0",
     "globals": "^17.7.0",
     "mocha": "^11.0.0",
     "rollup": "^4.62.2",
